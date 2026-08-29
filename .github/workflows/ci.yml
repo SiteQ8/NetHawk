@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9", "3.11", "3.12"]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+
+      - name: Generate the sample capture
+        run: python examples/make_sample.py
+
+      - name: Analyze the sample end to end
+        run: |
+          python -m nethawk version
+          python -m nethawk analyze examples/sample.pcap
+          python -m nethawk analyze examples/sample.pcap --format json > /tmp/report.json
+          python -m nethawk analyze examples/sample.pcap --format html -o /tmp/report.html

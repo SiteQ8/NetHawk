@@ -1,0 +1,36 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>NetHawk report</title><style>
+:root{--bg:#0d0e14;--panel:#171922;--panel2:#1f2230;--line:#2a2e3d;
+--text:#e8eaf0;--dim:#9096a0;--teal:#3dd6c4;--green:#5ad67d;--yellow:#f0be46;
+--red:#e9564b;--crit:#ff4a4a;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1040px;margin:0 auto;padding:32px 20px 64px}
+h1{font-size:26px;margin:0 0 4px}.sub{color:var(--dim);margin:0 0 24px;font-size:14px}
+.cards{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:28px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+padding:16px 18px;min-width:150px;flex:1}
+.card .n{font-size:24px;font-weight:700}.card .l{color:var(--dim);font-size:13px;margin-top:2px}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;color:var(--dim);
+margin:28px 0 12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--dim);font-weight:600}
+.bar{height:8px;border-radius:5px;background:var(--panel2);overflow:hidden;min-width:120px}
+.bar span{display:block;height:100%}
+.inc{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+padding:18px 20px;margin-bottom:16px}
+.inc .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.inc .host{font-weight:700;font-size:16px}
+.inc .hyp{color:var(--text)}
+.pill{padding:3px 10px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap}
+.ind{color:var(--dim);font-size:13px;margin:8px 0 4px}
+.tl{list-style:none;margin:12px 0 0;padding:0;border-left:2px solid var(--line)}
+.tl li{position:relative;padding:4px 0 4px 18px;font-size:14px}
+.tl li:before{content:"";position:absolute;left:-6px;top:11px;width:10px;height:10px;
+border-radius:50%;background:var(--teal)}
+.tl .t{color:var(--teal);font-variant-numeric:tabular-nums;margin-right:10px}
+.sev{font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+.muted{color:var(--dim)}
+.foot{color:var(--dim);font-size:13px;margin-top:36px;border-top:1px solid var(--line);padding-top:16px}
+</style></head><body><div class='wrap'><h1>&#128052; NetHawk report</h1><p class='sub'>examples/sample.pcap &middot; started 2024-05-14 09:15:00 UTC</p><div class='cards'><div class='card'><div class='n'>302</div><div class='l'>packets</div></div><div class='card'><div class='n'>44</div><div class='l'>flows</div></div><div class='card'><div class='n'>21m 0s</div><div class='l'>duration</div></div><div class='card'><div class='n'>5 / 3</div><div class='l'>hosts in / out</div></div><div class='card'><div class='n'>2</div><div class='l'>incidents</div></div><div class='card'><div class='n' style='color:var(--red)'>high</div><div class='l'>highest severity</div></div></div><h2>Host risk</h2><table><tr><th>host</th><th>score</th><th></th></tr><tr><td>192.168.1.42</td><td>70</td><td><div class='bar'><span style='width:70%;background:var(--crit)'></span></div></td></tr><tr><td>192.168.1.55</td><td>25</td><td><div class='bar'><span style='width:25%;background:var(--teal)'></span></div></td></tr></table><h2>Reconstructed incidents</h2><div class='inc'><div class='top'><div><span class='host'>192.168.1.42</span> <span class='hyp'>&mdash; Possible command and control with data exfiltration</span></div><span class='pill' style='background:var(--crit);color:#0d0e14'>confidence 75%</span></div><div class='ind'>indicators: 198.51.100.23, 203.0.113.66, backup-sync.example, cdn.telemetry-sync.net</div><ul class='tl'><li><span class='t'>09:15:03</span>DNS query for cdn.telemetry-sync.net</li><li><span class='t'>09:15:04</span>Periodic beaconing to 203.0.113.66 (cdn.telemetry-sync.net) begins, about every 60s</li><li><span class='t'>09:15:04</span>First connection to 203.0.113.66</li><li><span class='t'>09:35:00</span>Large outbound transfer to 198.51.100.23 (backup-sync.example) detected</li><li><span class='t'>09:35:00</span>First connection to 198.51.100.23</li></ul></div><div class='inc'><div class='top'><div><span class='host'>192.168.1.55</span> <span class='hyp'>&mdash; Possible internal reconnaissance</span></div><span class='pill' style='background:var(--yellow);color:#0d0e14'>confidence 50%</span></div><div class='ind'>indicators: 192.168.1.10</div><ul class='tl'><li><span class='t'>09:20:00</span>Vertical port scan of 192.168.1.10</li><li><span class='t'>09:20:00</span>First connection to 192.168.1.10</li></ul></div><h2>All findings</h2><table><tr><th>severity</th><th>type</th><th>source</th><th>target</th><th>detail</th></tr><tr><td><span class='sev' style='color:var(--red)'>high</span></td><td>beacon</td><td>192.168.1.42</td><td>203.0.113.66</td><td class='muted'>15 connections to 203.0.113.66 (cdn.telemetry-sync.net) on port 443, about every 60s.</td></tr><tr><td><span class='sev' style='color:var(--red)'>high</span></td><td>exfil</td><td>192.168.1.42</td><td>198.51.100.23</td><td class='muted'>12.2 MB sent from 192.168.1.42 to 198.51.100.23 (backup-sync.example), far more than was received.</td></tr><tr><td><span class='sev' style='color:var(--red)'>high</span></td><td>port_scan</td><td>192.168.1.55</td><td>192.168.1.10</td><td class='muted'>192.168.1.55 probed 25 ports on 192.168.1.10, mostly without completing a connection.</td></tr></table><p class='foot'>Generated by NetHawk 0.1.0. Analyze only captures you are authorized to inspect.</p></div></body></html>
