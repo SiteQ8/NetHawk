@@ -199,6 +199,32 @@
     return '<h2>Attack timeline</h2><div class="chart"><svg viewBox="0 0 ' + W + " " + H + '" class="swim" preserveAspectRatio="xMidYMid meet">' + svg + "</svg></div>";
   }
 
+  function incidentEvidence(inc) {
+    var h = '<div class="evidence hidden">';
+    if (inc.findings && inc.findings.length) {
+      h += '<div class="ev-h">Findings behind this incident</div>';
+      inc.findings.forEach(function (f) {
+        var att = (f.mitre || []).map(function (m) { return m.id; }).join(" ");
+        h += '<div class="ev-f"><span class="sev" style="color:' + (SEV[f.severity] || "var(--dim)") + '">' + esc(f.severity) + "</span> "
+          + "<b>" + esc(f.category) + "</b> " + (att ? '<span class="mono muted">' + esc(att) + "</span> " : "")
+          + '<span class="muted">' + esc(f.detail) + "</span></div>";
+      });
+    }
+    var indSet = {}; (inc.indicators || []).forEach(function (x) { indSet[x] = 1; });
+    var flows = (DATA.flows || []).filter(function (fl) { return fl.src === inc.host && (indSet[fl.dst] || indSet[fl.sni] || indSet[fl.http_host]); });
+    if (!flows.length) flows = (DATA.flows || []).filter(function (fl) { return fl.src === inc.host; });
+    flows = flows.slice(0, 12);
+    if (flows.length) {
+      h += '<div class="ev-h">Key flows</div><table><tr><th>start</th><th>destination</th><th>port</th><th>out</th><th>in</th><th>name</th></tr>';
+      flows.forEach(function (fl) {
+        var name = fl.sni || fl.http_host || "";
+        h += '<tr><td class="mono">' + clock(fl.first_ts) + '</td><td class="mono">' + esc(fl.dst) + '</td><td class="mono">' + fl.dst_port + '</td><td class="mono">' + fmtBytes(fl.bytes_out) + '</td><td class="mono">' + fmtBytes(fl.bytes_in) + '</td><td class="muted">' + esc(name) + "</td></tr>";
+      });
+      h += "</table>";
+    }
+    return h + "</div>";
+  }
+
   function renderIncidents() {
     var el = $("#p-inc"); var inc = DATA.incidents || [];
     if (!inc.length) { el.innerHTML = '<p class="muted">No incidents reconstructed.</p>'; return; }
@@ -208,11 +234,16 @@
         + '<span class="pill" style="background:' + confColor(i.confidence) + '">confidence ' + i.confidence + "%</span></div>";
       if (i.summary) h += '<p class="summary">' + esc(i.summary) + "</p>";
       if (i.timeline && i.timeline.length) { h += '<ul class="tl">'; i.timeline.forEach(function (e) { h += '<li><span class="t">' + clock(e.ts) + "</span>" + esc(e.text) + "</li>"; }); h += "</ul>"; }
+      h += '<button class="ev-toggle chip">show evidence</button>';
+      h += incidentEvidence(i);
       h += "</div>";
     });
     el.innerHTML = h;
     Array.prototype.forEach.call(el.querySelectorAll(".host[data-host]"), function (s) {
       s.style.cursor = "pointer"; s.onclick = function () { setFocus(s.getAttribute("data-host")); };
+    });
+    Array.prototype.forEach.call(el.querySelectorAll(".ev-toggle"), function (btn) {
+      btn.onclick = function () { var ev = btn.nextElementSibling; var hidden = ev.classList.toggle("hidden"); btn.textContent = hidden ? "show evidence" : "hide evidence"; };
     });
   }
 
