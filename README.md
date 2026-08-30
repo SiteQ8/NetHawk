@@ -7,6 +7,7 @@
 NetHawk reads a pcap and tells you the story inside it. It parses the traffic, rebuilds the conversations, finds the suspicious behavior, and then correlates those signals into incidents with a timeline and a confidence score. Instead of a wall of alerts, you get a short answer to the question that matters: what happened, on which host, and how sure are we. Use it from the command line, or open the built in web dashboard. One single, zero dependency Python tool you can drop onto an incident response box with nothing to install.
 
 [![Live demo](https://img.shields.io/badge/live%20demo-online-3DD6C4?style=flat-square)](https://siteq8.github.io/NetHawk/)
+[![Release](https://img.shields.io/badge/release-v0.3.0-8B5CF6?style=flat-square)](https://github.com/SiteQ8/NetHawk/releases/latest)
 ![License](https://img.shields.io/badge/license-MIT-3DD6C4?style=flat-square)
 ![Zero dependencies](https://img.shields.io/badge/dependencies-none-F5C542?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.9%2B-8B5CF6?style=flat-square)
@@ -93,6 +94,12 @@ Every analysis can be written to a single self contained HTML file, with no exte
 Every finding carries the evidence that produced it and the MITRE ATT&CK technique it maps to, so nothing is a black box.
 
 ## Install
+
+From the latest [release](https://github.com/SiteQ8/NetHawk/releases/latest), download the wheel and install it:
+
+```bash
+pip install nethawk-0.3.0-py3-none-any.whl
+```
 
 With pipx, straight from the repository:
 
