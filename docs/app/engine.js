@@ -9,7 +9,7 @@
  */
 (function (root) {
   "use strict";
-  var VERSION = "0.3.0";
+  var VERSION = "0.3.1";
   var SYN = 2, ACK = 16, RST = 4, FIN = 1;
 
   // ---- byte helpers ----
@@ -388,10 +388,10 @@
 
   // ---- detectors ----
   var DEFAULTS = {
-    scan_min_ports: 15, scan_min_hosts: 15, beacon_min_conns: 6, beacon_min_score: 0.7,
+    scan_min_ports: 15, scan_min_hosts: 15, beacon_min_conns: 8, beacon_min_score: 0.7,
     exfil_min_bytes: 5e6, exfil_ratio: 5.0, dns_tunnel_min_subdomains: 20, dns_tunnel_min_entropy: 3.2,
     dga_min_nxdomain: 20, dga_min_ratio: 0.5, long_conn_seconds: 3600, long_conn_min_bytes: 1e5,
-    fanout_min_hosts: 50,
+    fanout_min_hosts: 50, fanout_unanswered_ratio: 0.7,
     rare_ua_tokens: ["curl", "wget", "python-requests", "python-urllib", "go-http-client", "powershell", "winhttp", "libwww-perl", "httpie", "java/", "nikto", "sqlmap", "masscan", "nmap"],
     iocs: []
   };
@@ -598,20 +598,21 @@
   }
 
   function detectFanout(flows, cfg) {
-    var dsts = {}, span = {}, out = [];
+    var dsts = {}, span = {}, out = [], tcpTotal = {}, tcpUnest = {};
     flows.forEach(function (f) {
       if (!isInternal(f.a_ip) || isInternal(f.b_ip) || !f.b_ip) return;
       (dsts[f.a_ip] = dsts[f.a_ip] || {})[f.b_ip] = 1;
+      if (f.proto === "TCP") { tcpTotal[f.a_ip] = (tcpTotal[f.a_ip] || 0) + 1; if (!established(f)) tcpUnest[f.a_ip] = (tcpUnest[f.a_ip] || 0) + 1; }
       var s = span[f.a_ip] = span[f.a_ip] || [null, null];
       s[0] = s[0] === null ? f.first_ts : Math.min(s[0], f.first_ts);
       s[1] = s[1] === null ? f.last_ts : Math.max(s[1], f.last_ts);
     });
     Object.keys(dsts).forEach(function (h) {
-      var n = Object.keys(dsts[h]).length;
-      if (n >= cfg.fanout_min_hosts) {
-        out.push(F("external_fanout", "medium", h, "", "Many external destinations",
-          h + " connected to " + n + " distinct external hosts, which can indicate scanning or automated activity.",
-          span[h][0], span[h][1], 15, { external_hosts: n }));
+      var n = Object.keys(dsts[h]).length, total = tcpTotal[h] || 0, unest = tcpUnest[h] || 0;
+      if (n >= cfg.fanout_min_hosts && total && unest >= cfg.fanout_unanswered_ratio * total) {
+        out.push(F("external_fanout", "medium", h, "", "Fan out to many external hosts",
+          h + " reached " + n + " distinct external hosts, mostly without completing a connection, which can indicate scanning.",
+          span[h][0], span[h][1], 15, { external_hosts: n, unanswered: unest }));
       }
     });
     return out;
