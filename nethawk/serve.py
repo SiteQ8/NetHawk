@@ -91,6 +91,8 @@ tr.on td{background:rgba(61,214,196,0.10)}
 .evidence{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .ev-h{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin:12px 0 6px}
 .ev-f{font-size:13px;margin:5px 0}
+.keyhint{font-size:12px;margin:-4px 0 16px}
+.keyhint b{color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin:0 1px}
 .panel{display:none}.panel.active{display:block}
 .inc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:17px 19px;margin-bottom:15px}
 .inc .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -201,6 +203,7 @@ function render(data){
     +'<button data-tab="flow">Flows</button>'
     +'<button data-tab="net">Network</button>'
     +'<button data-tab="traf">Traffic</button></div>';
+  html+='<div class="keyhint muted">Keys: <b>1</b> to <b>5</b> tabs &middot; <b>&uarr;</b> <b>&darr;</b> hosts &middot; <b>esc</b> clear focus</div>';
   html+='<div id="p-inc" class="panel active"></div>';
   html+='<div id="p-find" class="panel"></div>';
   html+='<div id="p-flow" class="panel"></div>';
@@ -212,11 +215,7 @@ function render(data){
   Array.prototype.forEach.call(document.querySelectorAll('#dash tr[data-host]'),function(tr){
     tr.onclick=function(){setFocus(tr.getAttribute('data-host'));};});
   Array.prototype.forEach.call(document.querySelectorAll('.nav button'),function(b){
-    b.onclick=function(){
-      Array.prototype.forEach.call(document.querySelectorAll('.nav button'),function(x){x.classList.remove('active');});
-      Array.prototype.forEach.call(document.querySelectorAll('.panel'),function(x){x.classList.remove('active');});
-      b.classList.add('active'); $('#p-'+b.getAttribute('data-tab')).classList.add('active');
-    };
+    b.onclick=function(){switchTabGUI(b.getAttribute('data-tab'));};
   });
   renderIncidents(); renderFindings(); renderFlows(); renderNetwork(); renderTraffic();
 }
@@ -374,6 +373,12 @@ function renderFlows(){
 }
 
 function shortHost(h){if(h.indexOf(':')>=0)return h.split(':').slice(-2).join(':');var p=h.split('.');return p.length===4?p.slice(-2).join('.'):h;}
+function switchTabGUI(tab){
+  Array.prototype.forEach.call(document.querySelectorAll('.nav button'),function(x){if(x.getAttribute('data-tab')===tab)x.classList.add('active');else x.classList.remove('active');});
+  Array.prototype.forEach.call(document.querySelectorAll('.panel'),function(x){if(x.id==='p-'+tab)x.classList.add('active');else x.classList.remove('active');});
+}
+function navHosts(){var hs=DATA.host_scores||{};var list=Object.keys(hs).sort(function(a,b){return hs[b]-hs[a];});return list.length?list:(DATA.hosts_internal||[]).slice();}
+function moveFocus(delta){var list=navHosts();if(!list.length)return;var idx=list.indexOf(focusHost);var next=idx<0?(delta>0?0:list.length-1):(idx+delta+list.length)%list.length;var host=list[next];if(host!==focusHost){focusHost=null;setFocus(host);}}
 function renderNetwork(){
   var el=$('#p-net'); var flows=DATA.flows||[];
   if(!flows.length){el.innerHTML='<p class="muted">No conversations to graph.</p>';return;}
@@ -457,6 +462,15 @@ window.addEventListener('load',function(){
   fetch('/api/health').then(function(r){return r.json();}).then(function(d){
     if(sb&&!d.sample) sb.style.display='none';}).catch(function(){});
   if(window.__EMBEDDED__){ $('#intro').style.display='none'; render(window.__EMBEDDED__); }
+  document.addEventListener('keydown',function(e){
+    var tag=e.target&&e.target.tagName?e.target.tagName.toLowerCase():'';
+    if(tag==='input'||tag==='textarea')return;
+    if(!DATA)return;
+    if(e.key==='Escape'){if(focusHost){setFocus(focusHost);e.preventDefault();}return;}
+    if(e.key==='ArrowDown'){moveFocus(1);e.preventDefault();return;}
+    if(e.key==='ArrowUp'){moveFocus(-1);e.preventDefault();return;}
+    if(e.key>='1'&&e.key<='5'){switchTabGUI(['inc','find','flow','net','traf'][+e.key-1]);e.preventDefault();return;}
+  });
 });
 """
 

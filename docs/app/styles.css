@@ -112,6 +112,8 @@ tr.on td{background:rgba(61,214,196,0.10)}
 .evidence{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .ev-h{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin:12px 0 6px}
 .ev-f{font-size:13px;margin:5px 0}
+.keyhint{font-size:12px;margin:-4px 0 16px}
+.keyhint b{color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin:0 1px}
 .samples{margin-top:18px}
 .samples-label{color:var(--dim);font-size:13px;margin-bottom:8px;text-align:center}
 .panel{overflow-x:auto}
