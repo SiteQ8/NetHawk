@@ -18,6 +18,9 @@ Keep a Changelog, and the project uses semantic versioning.
   and a single host reaching an unusually large number of external destinations.
 * Export from the demo: download the full result as JSON, a list of indicators,
   or a standalone HTML report.
+* An evidence drawer on every incident in both GUIs: expand it to see the exact
+  findings that produced the incident, each with its ATT&CK technique, and the
+  key flows behind it.
 * A plain English summary for every incident, written from the correlated
   signals, so the reconstruction reads like a short writeup you can paste into a
   ticket. It appears in the text, JSON, and HTML output and in both GUIs, and the

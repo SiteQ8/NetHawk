@@ -26,6 +26,7 @@ _CSS = """
 :root{--bg:#0d0e14;--panel:#171922;--panel2:#1f2230;--line:#2a2e3d;--text:#e8eaf0;
 --dim:#9096a0;--teal:#3dd6c4;--green:#5ad67d;--yellow:#f0be46;--red:#e9564b;--crit:#ff4a4a;--violet:#8b5cf6;}
 *{box-sizing:border-box}
+.hidden{display:none!important}
 body{margin:0;background:var(--bg);color:var(--text);
 font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 a{color:var(--teal)}
@@ -86,6 +87,10 @@ padding:6px 14px;font-size:13px;cursor:pointer}
 tr.on td{background:rgba(61,214,196,0.10)}
 .host[data-host]:hover{color:var(--teal)}
 .summary{color:#c7ccd6;font-size:14px;margin:10px 0 2px;line-height:1.55}
+.ev-toggle{margin-top:12px}
+.evidence{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.ev-h{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin:12px 0 6px}
+.ev-f{font-size:13px;margin:5px 0}
 .panel{display:none}.panel.active{display:block}
 .inc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:17px 19px;margin-bottom:15px}
 .inc .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -243,6 +248,27 @@ function attackTimeline(incidents){
     svg+='<text x="'+xx.toFixed(1)+'" y="'+ay+'" font-size="10" fill="var(--dim)" text-anchor="'+anchor+'">'+clock(ts)+'</text>';});
   return '<h2>Attack timeline</h2><div class="chart"><svg viewBox="0 0 '+W+' '+H+'" class="swim" preserveAspectRatio="xMidYMid meet">'+svg+'</svg></div>';
 }
+function incidentEvidence(inc){
+  var h='<div class="evidence hidden">';
+  if(inc.findings&&inc.findings.length){
+    h+='<div class="ev-h">Findings behind this incident</div>';
+    inc.findings.forEach(function(f){var att=(f.mitre||[]).map(function(m){return m.id;}).join(' ');
+      h+='<div class="ev-f"><span class="sev" style="color:'+(SEV[f.severity]||'var(--dim)')+'">'+esc(f.severity)+'</span> '
+        +'<b>'+esc(f.category)+'</b> '+(att?'<span class="mono muted">'+esc(att)+'</span> ':'')
+        +'<span class="muted">'+esc(f.detail)+'</span></div>';});
+  }
+  var indSet={};(inc.indicators||[]).forEach(function(x){indSet[x]=1;});
+  var flows=(DATA.flows||[]).filter(function(fl){return fl.src===inc.host&&(indSet[fl.dst]||indSet[fl.sni]||indSet[fl.http_host]);});
+  if(!flows.length)flows=(DATA.flows||[]).filter(function(fl){return fl.src===inc.host;});
+  flows=flows.slice(0,12);
+  if(flows.length){
+    h+='<div class="ev-h">Key flows</div><table><tr><th>start</th><th>destination</th><th>port</th><th>out</th><th>in</th><th>name</th></tr>';
+    flows.forEach(function(fl){var name=fl.sni||fl.http_host||'';
+      h+='<tr><td class="mono">'+clock(fl.first_ts)+'</td><td class="mono">'+esc(fl.dst)+'</td><td class="mono">'+fl.dst_port+'</td><td class="mono">'+fmtBytes(fl.bytes_out)+'</td><td class="mono">'+fmtBytes(fl.bytes_in)+'</td><td class="muted">'+esc(name)+'</td></tr>';});
+    h+='</table>';
+  }
+  return h+'</div>';
+}
 function renderIncidents(){
   var el=$('#p-inc'); var inc=DATA.incidents||[];
   if(!inc.length){el.innerHTML='<p class="muted">No incidents reconstructed.</p>';return;}
@@ -254,11 +280,15 @@ function renderIncidents(){
     if(i.timeline&&i.timeline.length){h+='<ul class="tl">';
       i.timeline.forEach(function(e){h+='<li><span class="t">'+clock(e.ts)+'</span>'+esc(e.text)+'</li>';});
       h+='</ul>';}
+    h+='<button class="ev-toggle chip">show evidence</button>';
+    h+=incidentEvidence(i);
     h+='</div>';
   });
   el.innerHTML=h;
   Array.prototype.forEach.call(el.querySelectorAll('.host[data-host]'),function(s){
     s.style.cursor='pointer';s.onclick=function(){setFocus(s.getAttribute('data-host'));};});
+  Array.prototype.forEach.call(el.querySelectorAll('.ev-toggle'),function(btn){
+    btn.onclick=function(){var ev=btn.nextElementSibling;var hidden=ev.classList.toggle('hidden');btn.textContent=hidden?'show evidence':'hide evidence';};});
 }
 
 function techniquesObserved(){
