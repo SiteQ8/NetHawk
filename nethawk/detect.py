@@ -24,6 +24,7 @@ class Config:
     scan_min_hosts: int = 15
     beacon_min_conns: int = 8
     beacon_min_score: float = 0.7
+    beacon_min_interval: float = 10.0
     exfil_min_bytes: int = 5_000_000
     exfil_ratio: float = 5.0
     dns_tunnel_min_subdomains: int = 20
@@ -178,7 +179,9 @@ def detect_beaconing(flows: List[Flow], cfg: Config, ip_domain: Dict[str, str] =
         if len(intervals) < cfg.beacon_min_conns - 1:
             continue
         med = median(intervals)
-        if med <= 0.5:
+        # Real C2 beacons slowly to stay quiet; sub interval traffic is
+        # application keepalive or streaming, not command and control.
+        if med < cfg.beacon_min_interval:
             continue
         mad = median([abs(x - med) for x in intervals])
         score = max(0.0, 1.0 - (mad / med if med else 1.0))

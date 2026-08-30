@@ -75,6 +75,8 @@
     $("#err").textContent = "";
     currentScenario = null;
     $("#intro").classList.add("hidden");
+    var big = buf.byteLength > 75 * 1024 * 1024;
+    $("#spin").textContent = big ? "analyzing a large capture, this can take a moment (the command line tool is faster for files this size)..." : "analyzing...";
     $("#spin").classList.remove("hidden");
     // Defer so the spinner paints before the parse runs.
     setTimeout(function () {

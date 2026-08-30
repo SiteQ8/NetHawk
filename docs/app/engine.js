@@ -388,7 +388,7 @@
 
   // ---- detectors ----
   var DEFAULTS = {
-    scan_min_ports: 15, scan_min_hosts: 15, beacon_min_conns: 8, beacon_min_score: 0.7,
+    scan_min_ports: 15, scan_min_hosts: 15, beacon_min_conns: 8, beacon_min_score: 0.7, beacon_min_interval: 10,
     exfil_min_bytes: 5e6, exfil_ratio: 5.0, dns_tunnel_min_subdomains: 20, dns_tunnel_min_entropy: 3.2,
     dga_min_nxdomain: 20, dga_min_ratio: 0.5, long_conn_seconds: 3600, long_conn_min_bytes: 1e5,
     fanout_min_hosts: 50, fanout_unanswered_ratio: 0.7,
@@ -494,7 +494,7 @@
       var intervals = [];
       for (var i = 1; i < ts.length; i++) { var dt = ts[i] - ts[i - 1]; if (dt >= 0) intervals.push(dt); }
       if (intervals.length < cfg.beacon_min_conns - 1) return;
-      var med = median(intervals); if (med <= 0.5) return;
+      var med = median(intervals); if (med < cfg.beacon_min_interval) return;
       var mad = median(intervals.map(function (x) { return Math.abs(x - med); }));
       var score = Math.max(0, 1 - (med ? mad / med : 1));
       var sizes = evs.map(function (e) { return e[1]; });

@@ -46,6 +46,8 @@ def _build_parser() -> argparse.ArgumentParser:
     # Threshold overrides for tuning noise.
     an.add_argument("--beacon-min-conns", type=int, default=None)
     an.add_argument("--beacon-min-score", type=float, default=None)
+    an.add_argument("--beacon-min-interval", type=float, default=None,
+                    help="Minimum seconds between beacons. Lower it to catch faster beaconing.")
     an.add_argument("--exfil-min-bytes", type=int, default=None)
     an.add_argument("--scan-min-ports", type=int, default=None)
     an.add_argument("--scan-min-hosts", type=int, default=None)
@@ -71,8 +73,8 @@ def _config_from_args(args) -> Config:
     cfg = Config()
     if args.iocs:
         cfg.iocs = _load_iocs(args.iocs)
-    for attr in ("beacon_min_conns", "beacon_min_score", "exfil_min_bytes",
-                 "scan_min_ports", "scan_min_hosts"):
+    for attr in ("beacon_min_conns", "beacon_min_score", "beacon_min_interval",
+                 "exfil_min_bytes", "scan_min_ports", "scan_min_hosts"):
         value = getattr(args, attr, None)
         if value is not None:
             setattr(cfg, attr, value)
