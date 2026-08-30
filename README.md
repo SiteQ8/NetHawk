@@ -6,6 +6,7 @@
 
 NetHawk reads a pcap and tells you the story inside it. It parses the traffic, rebuilds the conversations, finds the suspicious behavior, and then correlates those signals into incidents with a timeline and a confidence score. Instead of a wall of alerts, you get a short answer to the question that matters: what happened, on which host, and how sure are we. Use it from the command line, or open the built in web dashboard. One single, zero dependency Python tool you can drop onto an incident response box with nothing to install.
 
+[![Live demo](https://img.shields.io/badge/live%20demo-online-3DD6C4?style=flat-square)](https://siteq8.github.io/NetHawk/)
 ![License](https://img.shields.io/badge/license-MIT-3DD6C4?style=flat-square)
 ![Zero dependencies](https://img.shields.io/badge/dependencies-none-F5C542?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.9%2B-8B5CF6?style=flat-square)
