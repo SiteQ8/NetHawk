@@ -3,6 +3,25 @@
 All notable changes to this project are recorded here. The format follows
 Keep a Changelog, and the project uses semantic versioning.
 
+## [0.3.1] - 2025
+
+### Tuned
+
+* Fewer false positives on real traffic. The external fan out detector now only
+  fires when the connections are mostly unanswered, which looks like scanning, so
+  a normal browser reaching many external hosts no longer trips it. The beaconing
+  detector now needs eight connections rather than six, for a steadier read of
+  periodicity. Both thresholds stay adjustable.
+
+### Validated
+
+* Ran the detectors against real enterprise traffic, about fourteen thousand
+  packets across several captures. Before this tuning they produced a handful of
+  false positives on ordinary browsing and polling; after it they produce none,
+  while still catching every threat in the demo scenarios and the scan style fan
+  out covered by the tests. The Python and browser engines were confirmed to
+  agree on all of these captures.
+
 ## [0.3.0] - 2025
 
 ### Fixed

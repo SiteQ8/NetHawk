@@ -22,7 +22,7 @@ SEV_RANK = {"critical": 0, "high": 1, "medium": 2, "low": 3, "info": 4}
 class Config:
     scan_min_ports: int = 15
     scan_min_hosts: int = 15
-    beacon_min_conns: int = 6
+    beacon_min_conns: int = 8
     beacon_min_score: float = 0.7
     exfil_min_bytes: int = 5_000_000
     exfil_ratio: float = 5.0
@@ -33,6 +33,7 @@ class Config:
     long_conn_seconds: int = 3600
     long_conn_min_bytes: int = 100_000
     fanout_min_hosts: int = 50
+    fanout_unanswered_ratio: float = 0.7
     rare_ua_tokens: tuple = (
         "curl", "wget", "python-requests", "python-urllib", "go-http-client",
         "powershell", "winhttp", "libwww-perl", "httpie", "java/", "nikto",
@@ -333,21 +334,30 @@ def detect_cleartext_protocol(flows: List[Flow], cfg: Config) -> List[Finding]:
 def detect_external_fanout(flows: List[Flow], cfg: Config) -> List[Finding]:
     dsts: Dict[str, set] = defaultdict(set)
     span: Dict[str, list] = defaultdict(lambda: [None, None])
+    tcp_total: Dict[str, int] = defaultdict(int)
+    tcp_unest: Dict[str, int] = defaultdict(int)
     for f in flows:
         if not is_internal(f.a_ip) or is_internal(f.b_ip) or not f.b_ip:
             continue
         dsts[f.a_ip].add(f.b_ip)
+        if f.proto == "TCP":
+            tcp_total[f.a_ip] += 1
+            if not f.established:
+                tcp_unest[f.a_ip] += 1
         s = span[f.a_ip]
         s[0] = f.first_ts if s[0] is None else min(s[0], f.first_ts)
         s[1] = f.last_ts if s[1] is None else max(s[1], f.last_ts)
     findings: List[Finding] = []
     for host, ds in dsts.items():
-        if len(ds) >= cfg.fanout_min_hosts:
+        # Reaching many external hosts is normal for a browser. Only flag it when
+        # the connections are mostly unanswered, which looks like scanning.
+        total = tcp_total[host]
+        if len(ds) >= cfg.fanout_min_hosts and total and tcp_unest[host] >= cfg.fanout_unanswered_ratio * total:
             s = span[host]
             findings.append(Finding(
-                "external_fanout", "medium", host, "", "Many external destinations",
-                f"{host} connected to {len(ds)} distinct external hosts, which can indicate scanning or automated activity.",
-                s[0] or 0, s[1] or 0, 15, {"external_hosts": len(ds)}))
+                "external_fanout", "medium", host, "", "Fan out to many external hosts",
+                f"{host} reached {len(ds)} distinct external hosts, mostly without completing a connection, which can indicate scanning.",
+                s[0] or 0, s[1] or 0, 15, {"external_hosts": len(ds), "unanswered": tcp_unest[host]}))
     return findings
 
 
