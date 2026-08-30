@@ -15,7 +15,7 @@
   var SESSION_KEY = "nethawk_demo_signed_in";
 
   var DATA = null;
-  var findSev = "all", findQ = "", flowSort = "bytes", flowDir = "desc", flowQ = "";
+  var findSev = "all", findQ = "", flowSort = "bytes", flowDir = "desc", flowQ = "", focusHost = null;
 
   function $(s, r) { return (r || document).querySelector(s); }
   function esc(s) {
@@ -94,14 +94,31 @@
   // ---------- render ----------
   function card(n, l) { return '<div class="card"><div class="n">' + esc(n) + '</div><div class="l">' + esc(l) + "</div></div>"; }
 
+  function setFocus(h) {
+    focusHost = (focusHost === h) ? null : h;
+    var bar = $("#focusbar");
+    if (bar) {
+      if (focusHost) {
+        bar.innerHTML = 'Focused on <b class="mono">' + esc(focusHost) + '</b> <button class="chip" id="clearfocus">show all</button>';
+        bar.classList.remove("hidden");
+        $("#clearfocus").onclick = function () { setFocus(focusHost); };
+      } else { bar.classList.add("hidden"); bar.innerHTML = ""; }
+    }
+    Array.prototype.forEach.call(document.querySelectorAll("#dash tr[data-host]"), function (tr) {
+      if (tr.getAttribute("data-host") === focusHost) tr.classList.add("on"); else tr.classList.remove("on");
+    });
+    renderFindings(); renderFlows(); renderNetwork();
+  }
+
   function render(data) {
-    DATA = data;
+    DATA = data; focusHost = null;
     var sc = {}; (data.findings || []).forEach(function (f) { sc[f.severity] = (sc[f.severity] || 0) + 1; });
     var top = "none"; ["critical", "high", "medium", "low"].forEach(function (s) { if (top === "none" && sc[s]) top = s; });
     var started = data.first_ts ? new Date(data.first_ts * 1000).toISOString().replace("T", " ").substr(0, 19) + " UTC" : "unknown";
 
     var html = "";
     html += '<p class="tag-line">' + esc(DATA_NAME) + " &middot; started " + esc(started) + "</p>";
+    html += '<div id="focusbar" class="focusbar hidden"></div>';
     html += '<div class="cards">';
     html += card(data.packet_count, "packets");
     html += card((data.flows || []).length, "flows");
@@ -122,7 +139,7 @@
     var hs = data.host_scores || {}; var keys = Object.keys(hs).sort(function (a, b) { return hs[b] - hs[a]; });
     if (keys.length) {
       html += "<h2>Host risk</h2><table><tr><th>host</th><th>score</th><th></th></tr>";
-      keys.forEach(function (k) { var v = hs[k]; html += '<tr><td class="mono">' + esc(k) + "</td><td>" + v + '</td><td><div class="bar"><span style="width:' + Math.min(100, v) + "%;background:" + scoreColor(v) + '"></span></div></td></tr>'; });
+      keys.forEach(function (k) { var v = hs[k]; html += '<tr data-host="' + esc(k) + '" class="clickrow"><td class="mono">' + esc(k) + "</td><td>" + v + '</td><td><div class="bar"><span style="width:' + Math.min(100, v) + "%;background:" + scoreColor(v) + '"></span></div></td></tr>'; });
       html += "</table>";
     }
 
@@ -146,6 +163,9 @@
         Array.prototype.forEach.call(document.querySelectorAll(".panel"), function (x) { x.classList.remove("active"); });
         b.classList.add("active"); $("#p-" + b.getAttribute("data-tab")).classList.add("active");
       };
+    });
+    Array.prototype.forEach.call(document.querySelectorAll("#dash tr[data-host]"), function (tr) {
+      tr.onclick = function () { setFocus(tr.getAttribute("data-host")); };
     });
     renderIncidents(); renderFindings(); renderFlows(); renderNetwork(); renderTraffic();
   }
@@ -184,13 +204,16 @@
     if (!inc.length) { el.innerHTML = '<p class="muted">No incidents reconstructed.</p>'; return; }
     var h = attackTimeline(inc);
     inc.forEach(function (i) {
-      h += '<div class="inc"><div class="top"><div><span class="host mono">' + esc(i.host) + '</span> <span>&middot; ' + esc(i.hypothesis) + "</span></div>"
+      h += '<div class="inc"><div class="top"><div><span class="host mono" data-host="' + esc(i.host) + '">' + esc(i.host) + '</span> <span>&middot; ' + esc(i.hypothesis) + "</span></div>"
         + '<span class="pill" style="background:' + confColor(i.confidence) + '">confidence ' + i.confidence + "%</span></div>";
       if (i.indicators && i.indicators.length) h += '<div class="ind">indicators: ' + esc(i.indicators.join(", ")) + "</div>";
       if (i.timeline && i.timeline.length) { h += '<ul class="tl">'; i.timeline.forEach(function (e) { h += '<li><span class="t">' + clock(e.ts) + "</span>" + esc(e.text) + "</li>"; }); h += "</ul>"; }
       h += "</div>";
     });
     el.innerHTML = h;
+    Array.prototype.forEach.call(el.querySelectorAll(".host[data-host]"), function (s) {
+      s.style.cursor = "pointer"; s.onclick = function () { setFocus(s.getAttribute("data-host")); };
+    });
   }
 
   function techniquesObserved() {
@@ -222,6 +245,7 @@
     chips.forEach(function (s) { c += '<button class="chip' + (findSev === s ? " on" : "") + '" data-sev="' + s + '">' + s + "</button>"; });
     c += '<input type="text" id="fq" placeholder="search findings" value="' + esc(findQ) + '"></div>';
     var rows = (DATA.findings || []).filter(function (f) {
+      if (focusHost && f.src !== focusHost && f.dst !== focusHost) return false;
       if (findSev !== "all" && f.severity !== findSev) return false;
       if (findQ) { var s = (f.category + " " + f.src + " " + f.dst + " " + f.title + " " + f.detail).toLowerCase(); if (s.indexOf(findQ.toLowerCase()) < 0) return false; }
       return true;
@@ -245,6 +269,7 @@
     var el = $("#p-flow");
     var c = '<div class="controls"><input type="text" id="flq" placeholder="filter by host, port, or name" value="' + esc(flowQ) + '"></div>';
     var flows = (DATA.flows || []).slice();
+    if (focusHost) flows = flows.filter(function (f) { return f.src === focusHost || f.dst === focusHost; });
     if (flowQ) { var q = flowQ.toLowerCase(); flows = flows.filter(function (f) { var s = (f.src + " " + f.dst + " " + f.dst_port + " " + (f.sni || "") + " " + (f.http_host || "") + " " + f.proto).toLowerCase(); return s.indexOf(q) >= 0; }); }
     flows.sort(function (a, b) {
       var x, y;
@@ -288,37 +313,36 @@
     var bytesBy = {}, edges = {};
     flows.forEach(function (f) {
       var w = f.bytes_out + f.bytes_in;
-      bytesBy[f.src] = (bytesBy[f.src] || 0) + w;
-      bytesBy[f.dst] = (bytesBy[f.dst] || 0) + w;
+      bytesBy[f.src] = (bytesBy[f.src] || 0) + w; bytesBy[f.dst] = (bytesBy[f.dst] || 0) + w;
       var k = f.src < f.dst ? f.src + "|" + f.dst : f.dst + "|" + f.src;
       edges[k] = (edges[k] || 0) + w;
     });
     var hosts = Object.keys(bytesBy).sort(function (a, b) { return bytesBy[b] - bytesBy[a]; });
-    var cap = 40, shown = hosts.slice(0, cap);
-    var cx = 350, cy = 250, R = 200, N = shown.length;
-    var posByHost = {};
-    shown.forEach(function (h, i) {
-      var a = -Math.PI / 2 + 2 * Math.PI * i / Math.max(1, N);
-      posByHost[h] = { h: h, a: a, x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) };
-    });
+    var cap = 40, shown = hosts.slice(0, cap), cx = 350, cy = 250, R = 200, N = shown.length, posByHost = {};
+    shown.forEach(function (h, i) { var a = -Math.PI / 2 + 2 * Math.PI * i / Math.max(1, N); posByHost[h] = { h: h, a: a, x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) }; });
     var internalSet = {}; (DATA.hosts_internal || []).forEach(function (h) { internalSet[h] = 1; });
     var scores = DATA.host_scores || {};
+    var neighbors = {};
+    if (focusHost) Object.keys(edges).forEach(function (k) { var pr = k.split("|"); if (pr[0] === focusHost) neighbors[pr[1]] = 1; else if (pr[1] === focusHost) neighbors[pr[0]] = 1; });
     var emax = Math.max.apply(null, Object.keys(edges).map(function (k) { return edges[k]; }).concat([1]));
     var lines = "";
     Object.keys(edges).forEach(function (k) {
       var pr = k.split("|"); if (!posByHost[pr[0]] || !posByHost[pr[1]]) return;
-      var p1 = posByHost[pr[0]], p2 = posByHost[pr[1]];
-      var op = (0.06 + 0.5 * edges[k] / emax).toFixed(2);
-      lines += '<line x1="' + p1.x.toFixed(1) + '" y1="' + p1.y.toFixed(1) + '" x2="' + p2.x.toFixed(1) + '" y2="' + p2.y.toFixed(1) + '" stroke="var(--teal)" stroke-opacity="' + op + '" stroke-width="1"/>';
+      var p1 = posByHost[pr[0]], p2 = posByHost[pr[1]], op;
+      if (focusHost) op = (pr[0] === focusHost || pr[1] === focusHost) ? 0.6 : 0.04;
+      else op = 0.06 + 0.5 * edges[k] / emax;
+      lines += '<line x1="' + p1.x.toFixed(1) + '" y1="' + p1.y.toFixed(1) + '" x2="' + p2.x.toFixed(1) + '" y2="' + p2.y.toFixed(1) + '" stroke="var(--teal)" stroke-opacity="' + op.toFixed(2) + '" stroke-width="1"/>';
     });
-    var bmax = Math.max.apply(null, shown.map(function (h) { return bytesBy[h]; }).concat([1]));
-    var nodes = "", labels = "";
+    var bmax = Math.max.apply(null, shown.map(function (h) { return bytesBy[h]; }).concat([1])), nodes = "", labels = "";
     shown.forEach(function (h) {
       var p = posByHost[h], sc = scores[h] || 0;
       var color = sc >= 70 ? "var(--crit)" : sc >= 40 ? "var(--yellow)" : internalSet[h] ? "var(--teal)" : "var(--dim)";
       var r = (4 + 9 * Math.sqrt(bytesBy[h] / bmax)).toFixed(1);
-      nodes += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="' + r + '" fill="' + color + '" fill-opacity="0.92" stroke="#0d0e14" stroke-width="1"><title>' + esc(h) + (sc ? " \u00b7 risk " + sc : "") + " \u00b7 " + fmtBytes(bytesBy[h]) + "</title></circle>";
-      if (sc >= 40 || bytesBy[h] >= 0.14 * bmax) {
+      var op = !focusHost ? 0.92 : (h === focusHost || neighbors[h] ? 0.98 : 0.16);
+      var stroke = h === focusHost ? "var(--text)" : "#0d0e14", sw = h === focusHost ? 2 : 1;
+      nodes += '<circle data-host="' + esc(h) + '" cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="' + r + '" fill="' + color + '" fill-opacity="' + op + '" stroke="' + stroke + '" stroke-width="' + sw + '" style="cursor:pointer"><title>' + esc(h) + (sc ? " \u00b7 risk " + sc : "") + " \u00b7 " + fmtBytes(bytesBy[h]) + "</title></circle>";
+      var showLabel = (!focusHost && (sc >= 40 || bytesBy[h] >= 0.14 * bmax)) || (focusHost && (h === focusHost || neighbors[h]));
+      if (showLabel) {
         var lx = cx + (R + 12) * Math.cos(p.a), ly = cy + (R + 12) * Math.sin(p.a);
         var anchor = Math.cos(p.a) < -0.3 ? "end" : (Math.cos(p.a) > 0.3 ? "start" : "middle");
         labels += '<text x="' + lx.toFixed(1) + '" y="' + (ly + 3).toFixed(1) + '" text-anchor="' + anchor + '" font-size="10" fill="var(--dim)">' + esc(shortHost(h)) + "</text>";
@@ -329,10 +353,11 @@
       + '<span><i style="background:var(--yellow)"></i> elevated</span>'
       + '<span><i style="background:var(--teal)"></i> internal</span>'
       + '<span><i style="background:var(--dim)"></i> external</span></div>';
-    var note = hosts.length > cap ? '<p class="note">Showing the ' + cap + " busiest hosts of " + hosts.length + ". Node size is total traffic; edges are conversations.</p>"
-      : '<p class="note">Node size is total traffic; edges are conversations.</p>';
+    var note = hosts.length > cap ? '<p class="note">Showing the ' + cap + " busiest hosts of " + hosts.length + ". Click a host to focus. Node size is total traffic; edges are conversations.</p>"
+      : '<p class="note">Click a host to focus. Node size is total traffic; edges are conversations.</p>';
     el.innerHTML = "<h2>Host graph</h2>" + legend
       + '<div class="chart"><svg viewBox="0 0 700 500" class="netsvg" preserveAspectRatio="xMidYMid meet">' + lines + nodes + labels + "</svg></div>" + note;
+    Array.prototype.forEach.call(el.querySelectorAll("circle[data-host]"), function (c) { c.onclick = function () { setFocus(c.getAttribute("data-host")); }; });
   }
 
   function activityChart(act) {

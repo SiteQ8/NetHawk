@@ -18,6 +18,9 @@ Keep a Changelog, and the project uses semantic versioning.
   and a single host reaching an unusually large number of external destinations.
 * Export from the demo: download the full result as JSON, a list of indicators,
   or a standalone HTML report.
+* Cross view host focus in both GUIs: click a host in the risk table, the graph,
+  or an incident, and the findings and flows filter to that host while the graph
+  highlights it and its neighbors and dims the rest.
 * Visualizations in both GUIs: a visual attack timeline that lays the incident
   events out per host across the capture, a host graph that draws the
   conversation between hosts and makes risky hosts stand out, an activity over
