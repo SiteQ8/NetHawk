@@ -18,6 +18,9 @@ Keep a Changelog, and the project uses semantic versioning.
   and a single host reaching an unusually large number of external destinations.
 * Export from the demo: download the full result as JSON, a list of indicators,
   or a standalone HTML report.
+* A keyboard flow in both GUIs: number keys switch tabs, the arrow keys step
+  through hosts by risk and focus each one, and escape clears the focus. The page
+  wiring is also guarded so it never attaches twice.
 * Shareable demo links. As you pick a scenario, switch tabs, and focus a host,
   the address bar updates, and a Copy link button lets you share a URL that
   reopens exactly that scenario, tab, and focused host.

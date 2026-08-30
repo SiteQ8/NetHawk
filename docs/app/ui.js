@@ -148,6 +148,19 @@
     renderFindings(); renderFlows(); renderNetwork(); updateHash();
   }
 
+  function navHosts() {
+    var hs = DATA.host_scores || {};
+    var list = Object.keys(hs).sort(function (a, b) { return hs[b] - hs[a]; });
+    return list.length ? list : (DATA.hosts_internal || []).slice();
+  }
+  function moveFocus(delta) {
+    var list = navHosts(); if (!list.length) return;
+    var idx = list.indexOf(focusHost);
+    var next = idx < 0 ? (delta > 0 ? 0 : list.length - 1) : (idx + delta + list.length) % list.length;
+    var host = list[next];
+    if (host !== focusHost) { focusHost = null; setFocus(host); }
+  }
+
   function render(data) {
     DATA = data; focusHost = null;
     var sc = {}; (data.findings || []).forEach(function (f) { sc[f.severity] = (sc[f.severity] || 0) + 1; });
@@ -187,6 +200,7 @@
       + '<button data-tab="flow">Flows</button>'
       + '<button data-tab="net">Network</button>'
       + '<button data-tab="traf">Traffic</button></div>';
+    html += '<div class="keyhint muted">Keys: <b>1</b> to <b>5</b> tabs &middot; <b>&uarr;</b> <b>&darr;</b> hosts &middot; <b>esc</b> clear focus</div>';
     html += '<div id="p-inc" class="panel active"></div>';
     html += '<div id="p-find" class="panel"></div>';
     html += '<div id="p-flow" class="panel"></div>';
@@ -496,6 +510,8 @@
 
   // ---------- wiring ----------
   window.addEventListener("load", function () {
+    if (window.__nethawkWired) return;
+    window.__nethawkWired = true;
     // login form
     var form = $("#login-form");
     if (form) form.addEventListener("submit", function (e) {
@@ -526,6 +542,16 @@
     var cl = $("#copylink");
     if (cl) cl.addEventListener("click", function () {
       try { navigator.clipboard.writeText(location.href); var t = cl.textContent; cl.textContent = "Copied"; setTimeout(function () { cl.textContent = t; }, 1200); } catch (e) {}
+    });
+
+    document.addEventListener("keydown", function (e) {
+      var tag = e.target && e.target.tagName ? e.target.tagName.toLowerCase() : "";
+      if (tag === "input" || tag === "textarea") return;
+      if (!DATA || $("#app").classList.contains("hidden")) return;
+      if (e.key === "Escape") { if (focusHost) { setFocus(focusHost); e.preventDefault(); } return; }
+      if (e.key === "ArrowDown") { moveFocus(1); e.preventDefault(); return; }
+      if (e.key === "ArrowUp") { moveFocus(-1); e.preventDefault(); return; }
+      if (e.key >= "1" && e.key <= "5") { switchTab(["inc", "find", "flow", "net", "traf"][+e.key - 1]); e.preventDefault(); return; }
     });
 
     // Optional preview mode: render a supplied analysis without a file.
