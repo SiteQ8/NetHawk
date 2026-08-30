@@ -10,7 +10,6 @@ NetHawk reads a pcap and tells you the story inside it. It parses the traffic, r
 ![License](https://img.shields.io/badge/license-MIT-3DD6C4?style=flat-square)
 ![Zero dependencies](https://img.shields.io/badge/dependencies-none-F5C542?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.9%2B-8B5CF6?style=flat-square)
-![CI](https://github.com/SiteQ8/NetHawk/actions/workflows/ci.yml/badge.svg)
 
 <br>
 
