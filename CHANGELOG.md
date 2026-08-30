@@ -3,6 +3,22 @@
 All notable changes to this project are recorded here. The format follows
 Keep a Changelog, and the project uses semantic versioning.
 
+## [0.3.0] - 2025
+
+### Added
+
+* A hosted demo on GitHub Pages that runs entirely in the browser. The full
+  analysis engine was ported to JavaScript, so you can drop a capture into the
+  page and reconstruct incidents with no server and nothing uploaded. The demo
+  sits behind a simple sign in, which is a front door for the public demo and
+  not a security control.
+* MITRE ATT&CK mapping. Every finding now carries the technique it maps to, and
+  the techniques are shown in the text report, the HTML report, and both GUIs.
+* Two more detectors: sensitive services in clear text such as FTP and Telnet,
+  and a single host reaching an unusually large number of external destinations.
+* Export from the demo: download the full result as JSON or as a standalone
+  HTML report.
+
 ## [0.2.0] - 2025
 
 ### Added

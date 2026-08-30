@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NetHawk &middot; threat hunting in your browser</title>
+<meta name="description" content="NetHawk reconstructs attacks from a packet capture. This demo runs entirely in your browser.">
+<link rel="stylesheet" href="app/styles.css">
+</head>
+<body>
+
+<!-- login gate (demo only) -->
+<div id="login" class="login">
+  <div class="login-card">
+    <div class="logo"><span style="font-size:24px">&#128052;</span><h1>NetHawk</h1></div>
+    <p class="sub">Sign in to the demo</p>
+    <form id="login-form" autocomplete="off">
+      <div class="field">
+        <label for="username">Username</label>
+        <input id="username" type="text" autocapitalize="none" autocorrect="off" spellcheck="false" value="demo">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" type="password">
+      </div>
+      <button type="submit">Sign in</button>
+      <div id="login-err" class="login-err"></div>
+    </form>
+    <div class="hint">
+      Demo access. Username <b>demo</b>, password <b>nethawk</b>.<br>
+      This sign in is a front door for the public demo, not a security control. The check runs in your browser.
+    </div>
+  </div>
+</div>
+
+<!-- app -->
+<div id="app" class="wrap hidden">
+  <div class="topbar">
+    <div class="brand"><span style="font-size:20px">&#128052;</span><h1>NetHawk</h1><span class="v" id="ver">demo</span></div>
+    <div class="spacer"></div>
+    <div id="exports" class="hidden">
+      <button class="btn ghost" id="again">Analyze another</button>
+      <button class="btn" id="dl-json">Download JSON</button>
+      <button class="btn" id="dl-html">Download HTML report</button>
+    </div>
+    <button class="btn ghost" id="signout">Sign out</button>
+  </div>
+
+  <div id="intro">
+    <p class="tag-line">Reconstruct attacks from a packet capture. Everything below runs in your browser. Nothing is uploaded.</p>
+    <div class="drop" id="drop">
+      <div class="big">Drop a .pcap or .pcapng here</div>
+      <div class="small">or click to choose a file</div>
+    </div>
+    <div class="row">
+      <button class="btn" id="sample">Load the sample capture</button>
+    </div>
+    <div id="err" class="err"></div>
+    <input id="file" type="file" accept=".pcap,.pcapng,.cap" style="display:none">
+  </div>
+
+  <div id="spin" class="spin hidden">analyzing...</div>
+  <div id="dash"></div>
+</div>
+
+<script src="app/engine.js"></script>
+<script src="app/ui.js"></script>
+<script>document.getElementById('ver').textContent=(window.NetHawkEngine&&window.NetHawkEngine.VERSION)||'demo';</script>
+</body>
+</html>

@@ -62,6 +62,11 @@ th.sortable:hover{color:var(--text)}
 .nav button{background:none;border:1px solid var(--line);color:var(--dim);border-radius:999px;
 padding:6px 14px;font-size:13px;cursor:pointer}
 .nav button.active{background:var(--panel2);color:var(--text);border-color:var(--teal)}
+.sevbar{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px}
+.sevchip{border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600}
+.techs{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 14px}
+.techs .t{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:3px 9px;font-size:12px}
+.techs .t b{color:var(--violet)}
 .panel{display:none}.panel.active{display:block}
 .inc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:17px 19px;margin-bottom:15px}
 .inc .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -133,6 +138,13 @@ function render(data){
   html+='<div class="card"><div class="n" style="color:'+(SEV[top]||'var(--dim)')+'">'+esc(top)+'</div><div class="l">highest severity</div></div>';
   html+='</div>';
 
+  // severity summary
+  var order=['critical','high','medium','low','info'];
+  html+='<div class="sevbar">';
+  order.forEach(function(s){if(sc[s])html+='<span class="sevchip" style="color:'+SEV[s]+';border-color:'+SEV[s]+'">'+sc[s]+' '+s+'</span>';});
+  if(!(data.findings||[]).length)html+='<span class="sevchip" style="color:var(--green);border-color:var(--green)">no findings</span>';
+  html+='</div>';
+
   // host risk
   var hs=data.host_scores||{}; var keys=Object.keys(hs).sort(function(a,b){return hs[b]-hs[a];});
   if(keys.length){
@@ -171,7 +183,7 @@ function renderIncidents(){
   if(!inc.length){el.innerHTML='<p class="muted">No incidents reconstructed.</p>';return;}
   var h='';
   inc.forEach(function(i){
-    h+='<div class="inc"><div class="top"><div><span class="host mono">'+esc(i.host)+'</span> <span>&mdash; '+esc(i.hypothesis)+'</span></div>'
+    h+='<div class="inc"><div class="top"><div><span class="host mono">'+esc(i.host)+'</span> <span>&middot; '+esc(i.hypothesis)+'</span></div>'
       +'<span class="pill" style="background:'+confColor(i.confidence)+'">confidence '+i.confidence+'%</span></div>';
     if(i.indicators&&i.indicators.length) h+='<div class="ind">indicators: '+esc(i.indicators.join(', '))+'</div>';
     if(i.timeline&&i.timeline.length){h+='<ul class="tl">';
@@ -182,8 +194,16 @@ function renderIncidents(){
   el.innerHTML=h;
 }
 
+function techniquesObserved(){
+  var seen={},list=[];
+  (DATA.findings||[]).forEach(function(f){(f.mitre||[]).forEach(function(m){if(!seen[m.id]){seen[m.id]=1;list.push(m);}});});
+  return list;
+}
 function renderFindings(){
   var el=$('#p-find');
+  var techs=techniquesObserved();
+  var th='';
+  if(techs.length){th='<div class="techs">';techs.forEach(function(m){th+='<span class="t"><b>'+esc(m.id)+'</b> '+esc(m.name)+'</span>';});th+='</div>';}
   var chips=['all','critical','high','medium','low'];
   var c='<div class="controls">';
   chips.forEach(function(s){c+='<button class="chip'+(findSev===s?' on':'')+'" data-sev="'+s+'">'+s+'</button>';});
@@ -193,14 +213,16 @@ function renderFindings(){
     if(findQ){var s=(f.category+' '+f.src+' '+f.dst+' '+f.title+' '+f.detail).toLowerCase();
       if(s.indexOf(findQ.toLowerCase())<0) return false;}
     return true;});
-  var t='<table><tr><th>severity</th><th>type</th><th>source</th><th>target</th><th>detail</th></tr>';
-  if(!rows.length){t+='<tr><td colspan="5" class="muted">No matching findings.</td></tr>';}
+  var t='<table><tr><th>severity</th><th>type</th><th>source</th><th>target</th><th>att&amp;ck</th><th>detail</th></tr>';
+  if(!rows.length){t+='<tr><td colspan="6" class="muted">No matching findings.</td></tr>';}
   rows.forEach(function(f){
+    var att=(f.mitre||[]).map(function(m){return m.id;}).join(' ');
     t+='<tr><td><span class="sev" style="color:'+(SEV[f.severity]||'var(--dim)')+'">'+esc(f.severity)+'</span></td>'
      +'<td>'+esc(f.category)+'</td><td class="mono">'+esc(f.src)+'</td><td class="mono">'+esc(f.dst||'')+'</td>'
+     +'<td class="muted mono">'+esc(att)+'</td>'
      +'<td class="muted">'+esc(f.detail)+'</td></tr>';});
   t+='</table>';
-  el.innerHTML=c+t;
+  el.innerHTML=th+c+t;
   Array.prototype.forEach.call(el.querySelectorAll('.chip'),function(b){
     b.onclick=function(){findSev=b.getAttribute('data-sev');renderFindings();};});
   var q=$('#fq',el); q.oninput=function(){findQ=q.value;var pos=q.selectionStart;renderFindings();
