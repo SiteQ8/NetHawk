@@ -71,8 +71,11 @@ def format_text(a: Analysis, use_color: bool = False) -> str:
     for f in a.findings:
         sc = _SEV_COLOR.get(f.severity, "dim")
         dst = f" -> {f.dst}" if f.dst else ""
-        out.append(f"  {_c(sc, on)}{f.severity.upper():<8}{reset} {f.category:<11} {f.src}{dst}  {f.title}")
+        out.append(f"  {_c(sc, on)}{f.severity.upper():<8}{reset} {f.category:<13} {f.src}{dst}  {f.title}")
         out.append(f"           {_c('dim', on)}{f.detail}{reset}")
+        if f.mitre:
+            ids = ", ".join(f"{m['id']} {m['name']}" for m in f.mitre)
+            out.append(f"           {_c('dim', on)}ATT&CK: {ids}{reset}")
     return "\n".join(out)
 
 
@@ -214,12 +217,14 @@ def format_html(a: Analysis, version: str) -> str:
     parts.append("<h2>All findings</h2>")
     if a.findings:
         parts.append("<table><tr><th>severity</th><th>type</th><th>source</th>"
-                     "<th>target</th><th>detail</th></tr>")
+                     "<th>target</th><th>att&amp;ck</th><th>detail</th></tr>")
         for f in a.findings:
             var = _SEV_CSSVAR.get(f.severity, "--dim")
+            att = " ".join(m["id"] for m in f.mitre)
             parts.append(
                 f"<tr><td><span class='sev' style='color:var({var})'>{e(f.severity)}</span></td>"
                 f"<td>{e(f.category)}</td><td>{e(f.src)}</td><td>{e(f.dst or '')}</td>"
+                f"<td class='muted'>{e(att)}</td>"
                 f"<td class='muted'>{e(f.detail)}</td></tr>")
         parts.append("</table>")
     else:

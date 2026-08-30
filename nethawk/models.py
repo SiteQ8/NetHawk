@@ -107,6 +107,7 @@ class Finding:
     last_ts: float = 0.0
     score: int = 0        # contribution to risk
     evidence: Dict = field(default_factory=dict)
+    mitre: List = field(default_factory=list)   # [{"id","name"}]
 
     def to_dict(self) -> dict:
         return {
@@ -120,6 +121,7 @@ class Finding:
             "last_ts": self.last_ts,
             "score": self.score,
             "evidence": self.evidence,
+            "mitre": self.mitre,
         }
 
 

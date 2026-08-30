@@ -17,12 +17,22 @@ NetHawk reads a pcap and tells you the story inside it. It parses the traffic, r
 
 </div>
 
-## The web GUI
+## Live demo
 
-Run `nethawk serve` and open the printed address. Drop a capture into the page and it is analyzed locally in your browser: summary cards, host risk, reconstructed incidents with timelines, a searchable findings list, a flows explorer, and traffic statistics. The whole interface is one document with no framework and no external resource, served by the standard library.
+There is a hosted demo that runs the whole tool in your browser at **https://siteq8.github.io/NetHawk/**. Sign in with username `demo` and password `nethawk`, then drop a capture in or load the bundled sample. The analysis engine is ported to JavaScript and runs client side, so nothing you open is uploaded anywhere. The sign in is a front door for the public demo, not a security control.
 
 <div align="center">
-<img src="docs/gui.png" width="760" alt="The NetHawk web dashboard showing reconstructed incidents" />
+<img src="docs/pages_login.png" width="620" alt="The demo sign in screen" />
+</div>
+
+## The web GUI
+
+Run `nethawk serve` and open the printed address. Drop a capture into the page and it is analyzed locally: summary cards, host risk, reconstructed incidents with timelines, a searchable findings list with the MITRE ATT&CK techniques each finding maps to, a flows explorer, and traffic statistics. The whole interface is one document with no framework and no external resource, served by the standard library. The hosted demo above is the same interface, with the engine compiled to run in the browser.
+
+<div align="center">
+<img src="docs/gui.png" width="760" alt="The NetHawk dashboard showing reconstructed incidents" />
+<br><br>
+<img src="docs/gui_findings.png" width="760" alt="The findings view with MITRE ATT&CK techniques" />
 <br><br>
 <img src="docs/gui_flows.png" width="760" alt="The flows explorer, a sortable and searchable table of every conversation" />
 </div>
@@ -66,11 +76,13 @@ Every analysis can be written to a single self contained HTML file, with no exte
 * Periodic beaconing, from the regularity of the intervals between connections.
 * Large outbound transfers that look like data leaving.
 * Credentials sent in clear text over HTTP.
+* Sensitive services in clear text, such as FTP and Telnet.
 * Long lived connections that can hide a tunnel.
 * Automation user agents such as curl, wget, and python requests.
+* A single host reaching an unusually large number of external destinations.
 * Contact with any indicator you supply in a list.
 
-Every finding carries the evidence that produced it, so nothing is a black box.
+Every finding carries the evidence that produced it and the MITRE ATT&CK technique it maps to, so nothing is a black box.
 
 ## Install
 
@@ -195,7 +207,9 @@ nethawk/
 │   └── models.py      # data models
 ├── tests/             # unit tests with crafted packet fixtures
 ├── examples/          # a reproducible sample capture generator
-└── docs/              # the demo and the dashboard preview
+└── docs/              # the GitHub Pages demo
+    ├── index.html     # the demo page with the sign in gate
+    └── app/           # engine.js is the browser port, plus ui.js and styles
 ```
 
 ## Roadmap

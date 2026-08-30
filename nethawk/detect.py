@@ -32,6 +32,7 @@ class Config:
     dga_min_ratio: float = 0.5
     long_conn_seconds: int = 3600
     long_conn_min_bytes: int = 100_000
+    fanout_min_hosts: int = 50
     rare_ua_tokens: tuple = (
         "curl", "wget", "python-requests", "python-urllib", "go-http-client",
         "powershell", "winhttp", "libwww-perl", "httpie", "java/", "nikto",
@@ -302,6 +303,70 @@ def detect_rare_user_agents(flows: List[Flow], cfg: Config) -> List[Finding]:
     return findings
 
 
+_CLEARTEXT_SERVICES = {21: "FTP", 23: "Telnet", 110: "POP3", 143: "IMAP"}
+
+
+def detect_cleartext_protocol(flows: List[Flow], cfg: Config) -> List[Finding]:
+    findings: List[Finding] = []
+    seen = set()
+    for f in flows:
+        if f.proto != "TCP":
+            continue
+        svc = _CLEARTEXT_SERVICES.get(f.b_port)
+        if not svc:
+            continue
+        if not f.established:
+            continue
+        key = (f.a_ip, f.b_ip, f.b_port)
+        if key in seen:
+            continue
+        seen.add(key)
+        sev = "medium" if f.b_port in (21, 23) else "low"
+        findings.append(Finding(
+            "cleartext_protocol", sev, f.a_ip, f.b_ip, f"{svc} in clear text",
+            f"{svc} traffic to {f.b_ip} on port {f.b_port} is unencrypted and can expose data or credentials.",
+            f.first_ts, f.last_ts, 12 if sev == "medium" else 6,
+            {"service": svc, "port": f.b_port}))
+    return findings
+
+
+def detect_external_fanout(flows: List[Flow], cfg: Config) -> List[Finding]:
+    dsts: Dict[str, set] = defaultdict(set)
+    span: Dict[str, list] = defaultdict(lambda: [None, None])
+    for f in flows:
+        if not is_internal(f.a_ip) or is_internal(f.b_ip) or not f.b_ip:
+            continue
+        dsts[f.a_ip].add(f.b_ip)
+        s = span[f.a_ip]
+        s[0] = f.first_ts if s[0] is None else min(s[0], f.first_ts)
+        s[1] = f.last_ts if s[1] is None else max(s[1], f.last_ts)
+    findings: List[Finding] = []
+    for host, ds in dsts.items():
+        if len(ds) >= cfg.fanout_min_hosts:
+            s = span[host]
+            findings.append(Finding(
+                "external_fanout", "medium", host, "", "Many external destinations",
+                f"{host} connected to {len(ds)} distinct external hosts, which can indicate scanning or automated activity.",
+                s[0] or 0, s[1] or 0, 15, {"external_hosts": len(ds)}))
+    return findings
+
+
+# Map each finding category to MITRE ATT&CK techniques.
+MITRE = {
+    "port_scan": [("T1046", "Network Service Discovery")],
+    "external_fanout": [("T1046", "Network Service Discovery")],
+    "dns_tunnel": [("T1071.004", "Application Layer Protocol: DNS")],
+    "dga": [("T1568.002", "Dynamic Resolution: Domain Generation Algorithms")],
+    "beacon": [("T1071", "Application Layer Protocol")],
+    "exfil": [("T1048", "Exfiltration Over Alternative Protocol")],
+    "cleartext_creds": [("T1552", "Unsecured Credentials")],
+    "cleartext_protocol": [("T1040", "Network Sniffing")],
+    "long_connection": [("T1572", "Protocol Tunneling")],
+    "rare_user_agent": [("T1071.001", "Application Layer Protocol: Web Protocols")],
+    "ioc": [("T1071", "Application Layer Protocol")],
+}
+
+
 def run_detectors(flows, dns_events, ip_domain, cfg: Config) -> List[Finding]:
     findings: List[Finding] = []
     findings += detect_port_scans(flows, cfg)
@@ -309,8 +374,12 @@ def run_detectors(flows, dns_events, ip_domain, cfg: Config) -> List[Finding]:
     findings += detect_beaconing(flows, cfg, ip_domain)
     findings += detect_exfil(flows, cfg, ip_domain)
     findings += detect_cleartext_creds(flows, cfg)
+    findings += detect_cleartext_protocol(flows, cfg)
     findings += detect_long_connections(flows, cfg)
     findings += detect_rare_user_agents(flows, cfg)
+    findings += detect_external_fanout(flows, cfg)
     findings += detect_iocs(flows, dns_events, cfg)
+    for f in findings:
+        f.mitre = [{"id": i, "name": n} for i, n in MITRE.get(f.category, [])]
     findings.sort(key=lambda f: (SEV_RANK.get(f.severity, 9), -f.score))
     return findings

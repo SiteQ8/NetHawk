@@ -39,6 +39,10 @@ def _finding_headline(f: Finding) -> str:
         return f"Credentials sent in clear text to {f.evidence.get('host', f.dst)}"
     if f.category == "long_connection":
         return f"Long lived connection to {f.dst} on port {f.evidence.get('port', '')}"
+    if f.category == "cleartext_protocol":
+        return f"{f.evidence.get('service', 'A service')} in clear text to {f.dst}"
+    if f.category == "external_fanout":
+        return f"Connections to {f.evidence.get('external_hosts', 'many')} external hosts"
     if f.category == "rare_user_agent":
         return f"Automation user agent seen: {f.evidence.get('user_agent', '')}"
     if f.category == "ioc":
@@ -62,8 +66,10 @@ def _hypothesis(cats: set) -> str:
         return "Possible data exfiltration"
     if has("cleartext_creds"):
         return "Credentials exposed in clear text"
-    if has("port_scan"):
+    if has("port_scan") or has("external_fanout"):
         return "Possible internal reconnaissance"
+    if has("cleartext_protocol"):
+        return "Sensitive service exposed in clear text"
     if has("dga"):
         return "Possible algorithmically generated domain activity"
     return "Unusual network activity"
@@ -74,6 +80,7 @@ def _confidence(findings: List[Finding]) -> int:
     base = {
         "ioc": 75, "beacon": 55, "dns_tunnel": 55, "exfil": 55,
         "cleartext_creds": 60, "port_scan": 50, "dga": 45,
+        "external_fanout": 45, "cleartext_protocol": 40,
         "long_connection": 35, "rare_user_agent": 30,
     }
     start = max((base.get(c, 35) for c in cats), default=35)

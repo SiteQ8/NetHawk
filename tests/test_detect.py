@@ -117,5 +117,28 @@ class TestNewDetectors(unittest.TestCase):
         self.assertTrue(any(x.category == "rare_user_agent" for x in found))
 
 
+
+class TestEnrichedDetectors(unittest.TestCase):
+    def test_cleartext_protocol_telnet(self):
+        from nethawk.detect import detect_cleartext_protocol
+        f = flow("192.168.1.10", 40000, "192.168.1.9", 23, first=1.0, out=200, inb=200, synack=True)
+        found = detect_cleartext_protocol([f], Config())
+        self.assertTrue(any(x.category == "cleartext_protocol" for x in found))
+
+    def test_external_fanout(self):
+        from nethawk.detect import detect_external_fanout
+        flows = [flow("192.168.1.10", 40000 + i, "203.0.113." + str(i % 250 + 1), 443, first=float(i))
+                 for i in range(60)]
+        found = detect_external_fanout(flows, Config())
+        self.assertTrue(any(x.category == "external_fanout" for x in found))
+
+    def test_mitre_attached(self):
+        from nethawk.detect import run_detectors
+        flows = [flow("192.168.1.5", 30000 + i, "192.168.1.9", 20 + i, first=i * 0.1) for i in range(20)]
+        found = run_detectors(flows, [], {}, Config())
+        scan = [f for f in found if f.category == "port_scan"][0]
+        self.assertTrue(scan.mitre and scan.mitre[0]["id"] == "T1046")
+
+
 if __name__ == "__main__":
     unittest.main()
