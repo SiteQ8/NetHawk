@@ -7,10 +7,73 @@ lookups, first contacts, and detections in the order they happened.
 """
 from __future__ import annotations
 
+import datetime
 from collections import defaultdict
 from typing import Dict, List
 
 from .models import DnsEvent, Finding, Flow, Incident, TimelineEvent
+
+_SUMMARY_ORDER = ["ioc", "beacon", "exfil", "dns_tunnel", "dga", "cleartext_creds",
+                  "cleartext_protocol", "port_scan", "external_fanout",
+                  "long_connection", "rare_user_agent"]
+
+
+def _clock(ts: float) -> str:
+    return datetime.datetime.utcfromtimestamp(ts).strftime("%H:%M:%S") if ts else "??:??:??"
+
+
+def _clause(f: Finding) -> str:
+    cat, ev, dst = f.category, f.evidence, f.dst
+    dom = ev.get("domain", "")
+    name = dst + (" (" + dom + ")" if dom else "")
+    if cat == "beacon":
+        return "periodic beaconing to " + (name or dst)
+    if cat == "exfil":
+        return "a large outbound transfer to " + (name or dst)
+    if cat == "port_scan":
+        return "a port scan of " + (dst or "internal hosts")
+    if cat == "dns_tunnel":
+        return "DNS tunneling under " + ev.get("parent", dst)
+    if cat == "dga":
+        return "a high rate of failed DNS lookups"
+    if cat == "cleartext_creds":
+        return "credentials sent in the clear"
+    if cat == "cleartext_protocol":
+        return ev.get("service", "a service") + " used in clear text"
+    if cat == "long_connection":
+        return "a long lived connection to " + dst
+    if cat == "rare_user_agent":
+        return "an automation user agent"
+    if cat == "external_fanout":
+        return "connections to many external hosts"
+    if cat == "ioc":
+        return "contact with a known indicator"
+    return f.title.lower()
+
+
+def _summarize(host, hypothesis, confidence, findings, indicators, timeline) -> str:
+    by_cat = {}
+    for f in findings:
+        by_cat.setdefault(f.category, f)
+    parts = [_clause(by_cat[c]) for c in _SUMMARY_ORDER if c in by_cat]
+    for c in by_cat:
+        if c not in _SUMMARY_ORDER:
+            parts.append(_clause(by_cat[c]))
+    s = host + ": " + hypothesis[0].lower() + hypothesis[1:] + " (confidence " + str(confidence) + "%)."
+    ts = [e.ts for e in timeline if e.ts]
+    if ts:
+        s += " Activity ran from " + _clock(min(ts)) + " to " + _clock(max(ts)) + "."
+    if parts:
+        if len(parts) == 1:
+            joined = parts[0]
+        elif len(parts) == 2:
+            joined = parts[0] + " and " + parts[1]
+        else:
+            joined = ", ".join(parts[:-1]) + ", and " + parts[-1]
+        s += " It involved " + joined + "."
+    if indicators:
+        s += " Indicators: " + ", ".join(indicators) + "."
+    return s
 
 
 def _looks_ip(value: str) -> bool:
@@ -144,10 +207,11 @@ def correlate(findings: List[Finding], flows: List[Flow], dns_events: List[DnsEv
             seen.add(key)
             ordered.append(ev)
 
+        inds = sorted(x for x in indicators if x)
         incidents.append(Incident(
             host=host, hypothesis=hypothesis, confidence=confidence,
-            findings=host_findings, timeline=ordered,
-            indicators=sorted(x for x in indicators if x)))
+            findings=host_findings, timeline=ordered, indicators=inds,
+            summary=_summarize(host, hypothesis, confidence, host_findings, inds, ordered)))
 
     incidents.sort(key=lambda i: i.confidence, reverse=True)
     return incidents

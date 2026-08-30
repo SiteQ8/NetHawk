@@ -206,7 +206,7 @@
     inc.forEach(function (i) {
       h += '<div class="inc"><div class="top"><div><span class="host mono" data-host="' + esc(i.host) + '">' + esc(i.host) + '</span> <span>&middot; ' + esc(i.hypothesis) + "</span></div>"
         + '<span class="pill" style="background:' + confColor(i.confidence) + '">confidence ' + i.confidence + "%</span></div>";
-      if (i.indicators && i.indicators.length) h += '<div class="ind">indicators: ' + esc(i.indicators.join(", ")) + "</div>";
+      if (i.summary) h += '<p class="summary">' + esc(i.summary) + "</p>";
       if (i.timeline && i.timeline.length) { h += '<ul class="tl">'; i.timeline.forEach(function (e) { h += '<li><span class="t">' + clock(e.ts) + "</span>" + esc(e.text) + "</li>"; }); h += "</ul>"; }
       h += "</div>";
     });

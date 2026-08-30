@@ -693,6 +693,40 @@
     return Math.max(20, Math.min(95, conf));
   }
   function clockUTC(ts) { if (!ts) return "--:--:--"; return new Date(ts * 1000).toISOString().substr(11, 8); }
+  var SUMMARY_ORDER = ["ioc", "beacon", "exfil", "dns_tunnel", "dga", "cleartext_creds", "cleartext_protocol", "port_scan", "external_fanout", "long_connection", "rare_user_agent"];
+  function clause(f) {
+    var cat = f.category, ev = f.evidence || {}, dst = f.dst || "";
+    var dom = ev.domain || "", name = dst + (dom ? " (" + dom + ")" : "");
+    if (cat === "beacon") return "periodic beaconing to " + (name || dst);
+    if (cat === "exfil") return "a large outbound transfer to " + (name || dst);
+    if (cat === "port_scan") return "a port scan of " + (dst || "internal hosts");
+    if (cat === "dns_tunnel") return "DNS tunneling under " + (ev.parent || dst);
+    if (cat === "dga") return "a high rate of failed DNS lookups";
+    if (cat === "cleartext_creds") return "credentials sent in the clear";
+    if (cat === "cleartext_protocol") return (ev.service || "a service") + " used in clear text";
+    if (cat === "long_connection") return "a long lived connection to " + dst;
+    if (cat === "rare_user_agent") return "an automation user agent";
+    if (cat === "external_fanout") return "connections to many external hosts";
+    if (cat === "ioc") return "contact with a known indicator";
+    return (f.title || "").toLowerCase();
+  }
+  function summarize(host, hypothesis, confidence, findings, indicators, timeline) {
+    var byCat = {};
+    findings.forEach(function (f) { if (!(f.category in byCat)) byCat[f.category] = f; });
+    var parts = [];
+    SUMMARY_ORDER.forEach(function (c) { if (byCat[c]) parts.push(clause(byCat[c])); });
+    Object.keys(byCat).forEach(function (c) { if (SUMMARY_ORDER.indexOf(c) < 0) parts.push(clause(byCat[c])); });
+    var s = host + ": " + hypothesis.charAt(0).toLowerCase() + hypothesis.slice(1) + " (confidence " + confidence + "%).";
+    var ts = timeline.map(function (e) { return e.ts; }).filter(function (t) { return t; });
+    if (ts.length) s += " Activity ran from " + clockUTC(Math.min.apply(null, ts)) + " to " + clockUTC(Math.max.apply(null, ts)) + ".";
+    if (parts.length) {
+      var joined = parts.length === 1 ? parts[0] : parts.length === 2 ? parts[0] + " and " + parts[1] : parts.slice(0, -1).join(", ") + ", and " + parts[parts.length - 1];
+      s += " It involved " + joined + ".";
+    }
+    if (indicators.length) s += " Indicators: " + indicators.join(", ") + ".";
+    return s;
+  }
+
   function correlate(findings, flows, dnsEvents, ipDomain) {
     var byHost = {};
     findings.forEach(function (f) { if (f.src) (byHost[f.src] = byHost[f.src] || []).push(f); });
@@ -723,7 +757,8 @@
       timeline.sort(function (a, b) { return a.ts - b.ts; }).forEach(function (ev) {
         var key = ev.ts.toFixed(3) + "|" + ev.text; if (seen[key]) return; seen[key] = 1; ordered.push(ev);
       });
-      incidents.push({ host: host, hypothesis: hypothesis(cats), confidence: confidence(hf), findings: hf, timeline: ordered, indicators: Object.keys(indicators).filter(Boolean).sort() });
+      var inds = Object.keys(indicators).filter(Boolean).sort();
+      incidents.push({ host: host, hypothesis: hypothesis(cats), confidence: confidence(hf), findings: hf, timeline: ordered, indicators: inds, summary: summarize(host, hypothesis(cats), confidence(hf), hf, inds, ordered) });
     });
     incidents.sort(function (a, b) { return b.confidence - a.confidence; });
     return incidents;

@@ -143,12 +143,14 @@ class Incident:
     findings: List[Finding] = field(default_factory=list)
     timeline: List[TimelineEvent] = field(default_factory=list)
     indicators: List[str] = field(default_factory=list)
+    summary: str = ""
 
     def to_dict(self) -> dict:
         return {
             "host": self.host,
             "hypothesis": self.hypothesis,
             "confidence": self.confidence,
+            "summary": self.summary,
             "indicators": self.indicators,
             "findings": [f.to_dict() for f in self.findings],
             "timeline": [t.to_dict() for t in self.timeline],

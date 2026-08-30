@@ -86,8 +86,8 @@ def _incident_text(index: int, inc: Incident, on: bool) -> List[str]:
         f"  {_c('bold', on)}[{index}] {inc.host}{reset}  {inc.hypothesis}  "
         f"{_c(conf_color, on)}confidence {inc.confidence}%{reset}"
     ]
-    if inc.indicators:
-        lines.append(f"      indicators: {', '.join(inc.indicators)}")
+    if inc.summary:
+        lines.append(f"      {_c('dim', on)}{inc.summary}{reset}")
     if inc.timeline:
         lines.append("      timeline:")
         for ev in inc.timeline:
@@ -133,6 +133,7 @@ padding:18px 20px;margin-bottom:16px}
 .inc .hyp{color:var(--text)}
 .pill{padding:3px 10px;border-radius:999px;font-size:13px;font-weight:700;white-space:nowrap}
 .ind{color:var(--dim);font-size:13px;margin:8px 0 4px}
+.summary{color:#c7ccd6;font-size:14px;margin:10px 0 2px;line-height:1.55}
 .tl{list-style:none;margin:12px 0 0;padding:0;border-left:2px solid var(--line)}
 .tl li{position:relative;padding:4px 0 4px 18px;font-size:14px}
 .tl li:before{content:"";position:absolute;left:-6px;top:11px;width:10px;height:10px;
@@ -205,8 +206,8 @@ def format_html(a: Analysis, version: str) -> str:
                          f"<span class='hyp'>&mdash; {e(inc.hypothesis)}</span></div>"
                          f"<span class='pill' style='background:var({var});color:#0d0e14'>"
                          f"confidence {inc.confidence}%</span></div>")
-            if inc.indicators:
-                parts.append(f"<div class='ind'>indicators: {e(', '.join(inc.indicators))}</div>")
+            if inc.summary:
+                parts.append(f"<p class='summary'>{e(inc.summary)}</p>")
             if inc.timeline:
                 parts.append("<ul class='tl'>")
                 for ev in inc.timeline:
