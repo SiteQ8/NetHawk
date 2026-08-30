@@ -87,5 +87,35 @@ class TestDnsAnomalies(unittest.TestCase):
         self.assertTrue(any(f.category == "dga" for f in found))
 
 
+class TestNewDetectors(unittest.TestCase):
+    def test_cleartext_credentials(self):
+        from nethawk.detect import detect_cleartext_creds
+        f = flow("192.168.1.10", 40000, "203.0.113.9", 80, first=1.0)
+        f.http_auth = True
+        f.http_host = "intranet.example"
+        found = detect_cleartext_creds([f], Config())
+        self.assertTrue(any(x.category == "cleartext_creds" for x in found))
+
+    def test_long_connection(self):
+        from nethawk.detect import detect_long_connections
+        f = flow("192.168.1.10", 40000, "203.0.113.9", 443, first=0.0, last=7200.0,
+                 out=500_000, inb=500_000)
+        found = detect_long_connections([f], Config())
+        self.assertTrue(any(x.category == "long_connection" for x in found))
+
+    def test_short_connection_not_flagged(self):
+        from nethawk.detect import detect_long_connections
+        f = flow("192.168.1.10", 40000, "203.0.113.9", 443, first=0.0, last=30.0,
+                 out=500_000, inb=500_000)
+        self.assertEqual(detect_long_connections([f], Config()), [])
+
+    def test_rare_user_agent(self):
+        from nethawk.detect import detect_rare_user_agents
+        f = flow("192.168.1.10", 40000, "203.0.113.9", 80, first=1.0)
+        f.user_agent = "python-requests/2.31.0"
+        found = detect_rare_user_agents([f], Config())
+        self.assertTrue(any(x.category == "rare_user_agent" for x in found))
+
+
 if __name__ == "__main__":
     unittest.main()

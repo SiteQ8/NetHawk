@@ -68,10 +68,17 @@ class TestAppParsing(unittest.TestCase):
 
     def test_http_host(self):
         req = b"GET /path HTTP/1.1\r\nHost: www.example.com\r\nUser-Agent: curl/8\r\n\r\n"
-        method, host, path, ua = parse_http(req)
-        self.assertEqual(method, "GET")
-        self.assertEqual(host, "www.example.com")
-        self.assertEqual(path, "/path")
+        info = parse_http(req)
+        self.assertEqual(info.method, "GET")
+        self.assertEqual(info.host, "www.example.com")
+        self.assertEqual(info.path, "/path")
+        self.assertEqual(info.user_agent, "curl/8")
+        self.assertFalse(info.has_auth)
+
+    def test_http_cleartext_auth(self):
+        req = b"GET / HTTP/1.1\r\nHost: x\r\nAuthorization: Basic dXNlcjpwYXNz\r\n\r\n"
+        info = parse_http(req)
+        self.assertTrue(info.has_auth)
 
 
 if __name__ == "__main__":

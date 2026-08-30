@@ -134,12 +134,21 @@ def parse_tls_sni(data: bytes) -> Optional[str]:
     return None
 
 
+@dataclass
+class HttpInfo:
+    method: str
+    host: str
+    path: str
+    user_agent: str = ""
+    has_auth: bool = False
+
+
 _HTTP_METHODS = (b"GET ", b"POST ", b"PUT ", b"HEAD ", b"DELETE ",
                  b"OPTIONS ", b"PATCH ", b"CONNECT ")
 
 
 def parse_http(data: bytes):
-    """Return (method, host, path, user_agent) for a plaintext HTTP request."""
+    """Return an HttpInfo for a plaintext HTTP request, or None."""
     if not data.startswith(_HTTP_METHODS):
         return None
     head = data.split(b"\r\n\r\n", 1)[0].decode("latin-1", "replace")
@@ -151,10 +160,13 @@ def parse_http(data: bytes):
         return None
     method, path = first[0], first[1]
     host = ua = ""
+    has_auth = False
     for line in lines[1:]:
         low = line.lower()
         if low.startswith("host:"):
             host = line.split(":", 1)[1].strip()
         elif low.startswith("user-agent:"):
             ua = line.split(":", 1)[1].strip()
-    return method, host, path, ua
+        elif low.startswith("authorization:"):
+            has_auth = True
+    return HttpInfo(method=method, host=host, path=path, user_agent=ua, has_auth=has_auth)

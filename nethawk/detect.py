@@ -30,6 +30,13 @@ class Config:
     dns_tunnel_min_entropy: float = 3.2
     dga_min_nxdomain: int = 20
     dga_min_ratio: float = 0.5
+    long_conn_seconds: int = 3600
+    long_conn_min_bytes: int = 100_000
+    rare_ua_tokens: tuple = (
+        "curl", "wget", "python-requests", "python-urllib", "go-http-client",
+        "powershell", "winhttp", "libwww-perl", "httpie", "java/", "nikto",
+        "sqlmap", "masscan", "nmap",
+    )
     iocs: Set[str] = field(default_factory=set)
 
 
@@ -246,12 +253,64 @@ def detect_iocs(flows: List[Flow], dns_events: List[DnsEvent], cfg: Config) -> L
     return findings
 
 
+def detect_cleartext_creds(flows: List[Flow], cfg: Config) -> List[Finding]:
+    findings: List[Finding] = []
+    seen = set()
+    for f in flows:
+        if f.http_auth and (f.a_ip, f.b_ip) not in seen:
+            seen.add((f.a_ip, f.b_ip))
+            host = f.http_host or f.b_ip
+            findings.append(Finding(
+                "cleartext_creds", "high", f.a_ip, f.b_ip, "Credentials sent in clear text",
+                f"An HTTP authorization header was sent to {host} without TLS.",
+                f.first_ts, f.last_ts, 30, {"host": host}))
+    return findings
+
+
+def detect_long_connections(flows: List[Flow], cfg: Config) -> List[Finding]:
+    findings: List[Finding] = []
+    for f in flows:
+        if f.proto != "TCP":
+            continue
+        if f.duration >= cfg.long_conn_seconds and f.total_bytes >= cfg.long_conn_min_bytes:
+            external = not is_internal(f.b_ip)
+            dom = f.sni or f.http_host
+            name = f"{f.b_ip}" + (f" ({dom})" if dom else "")
+            findings.append(Finding(
+                "long_connection", "medium" if external else "low", f.a_ip, f.b_ip,
+                "Long lived connection",
+                f"A single connection to {name} on port {f.b_port} lasted {_human_interval(f.duration)}.",
+                f.first_ts, f.last_ts, 15 if external else 8,
+                {"duration_seconds": round(f.duration, 1), "port": f.b_port, "bytes": f.total_bytes}))
+    return findings
+
+
+def detect_rare_user_agents(flows: List[Flow], cfg: Config) -> List[Finding]:
+    findings: List[Finding] = []
+    seen = set()
+    for f in flows:
+        ua = (f.user_agent or "").lower()
+        if not ua:
+            continue
+        hit = next((t for t in cfg.rare_ua_tokens if t in ua), None)
+        if hit and (f.a_ip, hit) not in seen:
+            seen.add((f.a_ip, hit))
+            findings.append(Finding(
+                "rare_user_agent", "low", f.a_ip, f.b_ip, "Automation user agent",
+                f'{f.a_ip} used the user agent "{f.user_agent}", which is common for scripts and tools.',
+                f.first_ts, f.last_ts, 8, {"user_agent": f.user_agent}))
+    return findings
+
+
 def run_detectors(flows, dns_events, ip_domain, cfg: Config) -> List[Finding]:
     findings: List[Finding] = []
     findings += detect_port_scans(flows, cfg)
     findings += detect_dns_anomalies(dns_events, cfg)
     findings += detect_beaconing(flows, cfg, ip_domain)
     findings += detect_exfil(flows, cfg, ip_domain)
+    findings += detect_cleartext_creds(flows, cfg)
+    findings += detect_long_connections(flows, cfg)
+    findings += detect_rare_user_agents(flows, cfg)
     findings += detect_iocs(flows, dns_events, cfg)
     findings.sort(key=lambda f: (SEV_RANK.get(f.severity, 9), -f.score))
     return findings

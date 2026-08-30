@@ -115,7 +115,11 @@ class FlowTable:
                 elif not fl.http_host:
                     http = parse_http(p.payload)
                     if http:
-                        fl.http_host = http[1]
+                        fl.http_host = http.host
+                        if http.user_agent and not fl.user_agent:
+                            fl.user_agent = http.user_agent
+                        if http.has_auth:
+                            fl.http_auth = True
 
     def finalize(self):
         flows = list(self.flows.values())

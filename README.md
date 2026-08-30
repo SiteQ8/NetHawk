@@ -4,7 +4,7 @@
 
 ### Reconstruct attacks from a packet capture.
 
-NetHawk reads a pcap and tells you the story inside it. It parses the traffic, rebuilds the conversations, finds the suspicious behavior, and then correlates those signals into incidents with a timeline and a confidence score. Instead of a wall of alerts, you get a short answer to the question that matters: what happened, on which host, and how sure are we. One single, zero dependency Python tool you can drop onto an incident response box with nothing to install.
+NetHawk reads a pcap and tells you the story inside it. It parses the traffic, rebuilds the conversations, finds the suspicious behavior, and then correlates those signals into incidents with a timeline and a confidence score. Instead of a wall of alerts, you get a short answer to the question that matters: what happened, on which host, and how sure are we. Use it from the command line, or open the built in web dashboard. One single, zero dependency Python tool you can drop onto an incident response box with nothing to install.
 
 ![License](https://img.shields.io/badge/license-MIT-3DD6C4?style=flat-square)
 ![Zero dependencies](https://img.shields.io/badge/dependencies-none-F5C542?style=flat-square)
@@ -16,6 +16,21 @@ NetHawk reads a pcap and tells you the story inside it. It parses the traffic, r
 <img src="docs/demo.gif" width="820" alt="NetHawk analyzing a capture and reconstructing an incident" />
 
 </div>
+
+## The web GUI
+
+Run `nethawk serve` and open the printed address. Drop a capture into the page and it is analyzed locally in your browser: summary cards, host risk, reconstructed incidents with timelines, a searchable findings list, a flows explorer, and traffic statistics. The whole interface is one document with no framework and no external resource, served by the standard library.
+
+<div align="center">
+<img src="docs/gui.png" width="760" alt="The NetHawk web dashboard showing reconstructed incidents" />
+<br><br>
+<img src="docs/gui_flows.png" width="760" alt="The flows explorer, a sortable and searchable table of every conversation" />
+</div>
+
+```bash
+nethawk serve            # then open http://127.0.0.1:8080
+nethawk serve --open     # and open it in your browser automatically
+```
 
 ## What makes it different
 
@@ -50,6 +65,9 @@ Every analysis can be written to a single self contained HTML file, with no exte
 * High rates of failed lookups, which can point to algorithmically generated domains.
 * Periodic beaconing, from the regularity of the intervals between connections.
 * Large outbound transfers that look like data leaving.
+* Credentials sent in clear text over HTTP.
+* Long lived connections that can hide a tunnel.
+* Automation user agents such as curl, wget, and python requests.
 * Contact with any indicator you supply in a list.
 
 Every finding carries the evidence that produced it, so nothing is a black box.
@@ -118,6 +136,22 @@ nethawk analyze capture.pcap \
   --scan-min-ports 25
 ```
 
+List the conversations in a capture, sorted by volume:
+
+```bash
+nethawk flows capture.pcap --sort bytes --limit 40
+```
+
+Open the web dashboard, or use it as a JSON API:
+
+```bash
+nethawk serve
+# then, from anywhere:
+curl --data-binary @capture.pcap http://127.0.0.1:8080/api/analyze
+```
+
+The API returns the same structured result as the json report, so you can wire NetHawk into other tools without changing its zero dependency core. The server binds to localhost by default.
+
 ## How it works
 
 NetHawk runs a simple pipeline:
@@ -157,6 +191,7 @@ nethawk/
 │   ├── detect.py      # the detection engine
 │   ├── correlate.py   # incidents and timelines
 │   ├── report.py      # text, json, and HTML output
+│   ├── serve.py       # the built in web GUI and JSON API
 │   └── models.py      # data models
 ├── tests/             # unit tests with crafted packet fixtures
 ├── examples/          # a reproducible sample capture generator
