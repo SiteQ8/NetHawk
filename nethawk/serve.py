@@ -73,6 +73,12 @@ padding:6px 14px;font-size:13px;cursor:pointer}
 .axis{display:flex;justify-content:space-between;color:var(--dim);font-size:12px;margin:2px 2px 16px}
 .legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--dim);font-size:13px;margin-bottom:10px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;vertical-align:middle;margin-right:4px}
+.swim{width:100%;height:auto;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:16px}
+.matrix{display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 16px}
+.matrix .col{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:170px;flex:1}
+.matrix .col-h{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin-bottom:8px;border-bottom:1px solid var(--line);padding-bottom:6px}
+.matrix .col .t{display:block;font-size:13px;margin:5px 0}
+.matrix .col .t b{color:var(--violet)}
 .panel{display:none}.panel.active{display:block}
 .inc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:17px 19px;margin-bottom:15px}
 .inc .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -109,6 +115,9 @@ function clock(ts){if(!ts)return '--:--:--';return new Date(ts*1000).toISOString
 var SEV={critical:'var(--crit)',high:'var(--red)',medium:'var(--yellow)',low:'var(--teal)',info:'var(--dim)'};
 function scoreColor(v){return v>=70?'var(--crit)':v>=40?'var(--yellow)':'var(--teal)';}
 function confColor(v){return v>=70?'var(--crit)':v>=45?'var(--yellow)':'var(--teal)';}
+var TACTIC_ORDER=['Discovery','Credential Access','Command and Control','Exfiltration'];
+var TECH_TACTIC={'T1046':'Discovery','T1040':'Credential Access','T1552':'Credential Access','T1071':'Command and Control','T1071.001':'Command and Control','T1071.004':'Command and Control','T1568.002':'Command and Control','T1572':'Command and Control','T1048':'Exfiltration'};
+var LANE_COLORS=['var(--crit)','var(--violet)','var(--teal)','var(--yellow)','var(--green)'];
 
 function showUpload(){ $('#dash').innerHTML=''; $('#intro').style.display='block'; }
 function analyzeBytes(buf){
@@ -186,10 +195,36 @@ function render(data){
 }
 function card(n,l){return '<div class="card"><div class="n">'+esc(n)+'</div><div class="l">'+esc(l)+'</div></div>';}
 
+function attackTimeline(incidents){
+  var events=[];
+  incidents.forEach(function(i){(i.timeline||[]).forEach(function(e){if(e.ts)events.push(e);});});
+  if(events.length<2)return '';
+  var first=Math.min.apply(null,events.map(function(e){return e.ts;}));
+  var last=Math.max.apply(null,events.map(function(e){return e.ts;}));
+  var firstByHost={};
+  events.forEach(function(e){if(firstByHost[e.host]==null||e.ts<firstByHost[e.host])firstByHost[e.host]=e.ts;});
+  var hosts=Object.keys(firstByHost).sort(function(a,b){return firstByHost[a]-firstByHost[b];});
+  var colorByHost={};hosts.forEach(function(h,i){colorByHost[h]=LANE_COLORS[i%LANE_COLORS.length];});
+  var W=700,padL=96,padR=20,top=22,laneH=44,H=top+hosts.length*laneH+34,span=last-first;
+  function x(ts){return span>0?padL+(ts-first)/span*(W-padL-padR):padL;}
+  var svg='';
+  hosts.forEach(function(h,i){
+    var y=top+i*laneH+laneH/2;
+    svg+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="var(--line)" stroke-width="1"/>';
+    svg+='<text x="4" y="'+(y+4)+'" font-size="11" fill="'+colorByHost[h]+'">'+esc(shortHost(h))+'</text>';
+    var evs=events.filter(function(e){return e.host===h;}).sort(function(a,b){return a.ts-b.ts;});
+    for(var j=1;j<evs.length;j++)svg+='<line x1="'+x(evs[j-1].ts).toFixed(1)+'" y1="'+y+'" x2="'+x(evs[j].ts).toFixed(1)+'" y2="'+y+'" stroke="'+colorByHost[h]+'" stroke-opacity="0.35" stroke-width="2"/>';
+    evs.forEach(function(e){svg+='<circle cx="'+x(e.ts).toFixed(1)+'" cy="'+y+'" r="5" fill="'+colorByHost[h]+'"><title>'+clock(e.ts)+'  '+esc(e.text)+'</title></circle>';});
+  });
+  var ay=H-14;
+  [0,0.5,1].forEach(function(f){var ts=first+span*f,xx=x(ts),anchor=f===0?'start':f===1?'end':'middle';
+    svg+='<text x="'+xx.toFixed(1)+'" y="'+ay+'" font-size="10" fill="var(--dim)" text-anchor="'+anchor+'">'+clock(ts)+'</text>';});
+  return '<h2>Attack timeline</h2><div class="chart"><svg viewBox="0 0 '+W+' '+H+'" class="swim" preserveAspectRatio="xMidYMid meet">'+svg+'</svg></div>';
+}
 function renderIncidents(){
   var el=$('#p-inc'); var inc=DATA.incidents||[];
   if(!inc.length){el.innerHTML='<p class="muted">No incidents reconstructed.</p>';return;}
-  var h='';
+  var h=attackTimeline(inc);
   inc.forEach(function(i){
     h+='<div class="inc"><div class="top"><div><span class="host mono">'+esc(i.host)+'</span> <span>&middot; '+esc(i.hypothesis)+'</span></div>'
       +'<span class="pill" style="background:'+confColor(i.confidence)+'">confidence '+i.confidence+'%</span></div>';
@@ -207,11 +242,20 @@ function techniquesObserved(){
   (DATA.findings||[]).forEach(function(f){(f.mitre||[]).forEach(function(m){if(!seen[m.id]){seen[m.id]=1;list.push(m);}});});
   return list;
 }
+function attckMatrix(){
+  var techs=techniquesObserved();if(!techs.length)return '';
+  var byTactic={};
+  techs.forEach(function(m){var t=TECH_TACTIC[m.id]||'Other';(byTactic[t]=byTactic[t]||[]).push(m);});
+  var order=TACTIC_ORDER.filter(function(t){return byTactic[t];});
+  Object.keys(byTactic).forEach(function(t){if(order.indexOf(t)<0)order.push(t);});
+  var h='<div class="matrix">';
+  order.forEach(function(t){h+='<div class="col"><div class="col-h">'+esc(t)+'</div>';
+    byTactic[t].forEach(function(m){h+='<span class="t"><b>'+esc(m.id)+'</b> '+esc(m.name)+'</span>';});h+='</div>';});
+  return h+'</div>';
+}
 function renderFindings(){
   var el=$('#p-find');
-  var techs=techniquesObserved();
-  var th='';
-  if(techs.length){th='<div class="techs">';techs.forEach(function(m){th+='<span class="t"><b>'+esc(m.id)+'</b> '+esc(m.name)+'</span>';});th+='</div>';}
+  var th=attckMatrix();
   var chips=['all','critical','high','medium','low'];
   var c='<div class="controls">';
   chips.forEach(function(s){c+='<button class="chip'+(findSev===s?' on':'')+'" data-sev="'+s+'">'+s+'</button>';});

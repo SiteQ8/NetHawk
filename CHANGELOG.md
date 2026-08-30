@@ -18,9 +18,11 @@ Keep a Changelog, and the project uses semantic versioning.
   and a single host reaching an unusually large number of external destinations.
 * Export from the demo: download the full result as JSON, a list of indicators,
   or a standalone HTML report.
-* Visualizations in both GUIs: a host graph that draws the conversation between
-  hosts and makes risky hosts stand out, and an activity over time chart that
-  surfaces bursts such as a large transfer.
+* Visualizations in both GUIs: a visual attack timeline that lays the incident
+  events out per host across the capture, a host graph that draws the
+  conversation between hosts and makes risky hosts stand out, an activity over
+  time chart that surfaces bursts such as a large transfer, and an ATT&CK matrix
+  that groups the observed techniques by tactic.
 
 ## [0.2.0] - 2025
 
