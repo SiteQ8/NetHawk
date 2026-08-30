@@ -116,6 +116,8 @@ tr.on td{background:rgba(61,214,196,0.10)}
 .keyhint b{color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 6px;margin:0 1px}
 .samples{margin-top:18px}
 .samples-label{color:var(--dim);font-size:13px;margin-bottom:8px;text-align:center}
+.btn.samp.primary{background:var(--teal);color:#0d0e14;border-color:var(--teal);font-weight:700}
+.btn.samp.primary:hover{filter:brightness(1.05)}
 .panel{overflow-x:auto}
 @media (max-width:640px){
   .wrap{padding:16px 12px 60px}

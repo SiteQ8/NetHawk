@@ -15,7 +15,7 @@
 <div id="login" class="login">
   <div class="login-card">
     <div class="logo"><span style="font-size:24px">&#129413;</span><h1>NetHawk</h1></div>
-    <p class="sub">Sign in to the demo</p>
+    <p class="sub">See an attack reconstructed from a packet capture, right in your browser.</p>
     <form id="login-form" autocomplete="off">
       <div class="field">
         <label for="username">Username</label>
@@ -23,14 +23,13 @@
       </div>
       <div class="field">
         <label for="password">Password</label>
-        <input id="password" type="password">
+        <input id="password" type="password" value="nethawk">
       </div>
-      <button type="submit">Sign in</button>
+      <button type="submit">Enter the demo</button>
       <div id="login-err" class="login-err"></div>
     </form>
     <div class="hint">
-      Demo access. Username <b>demo</b>, password <b>nethawk</b>.<br>
-      This sign in is a front door for the public demo, not a security control. The check runs in your browser.
+      Already filled in, just press <b>Enter the demo</b>. Everything runs in your browser and nothing you open is uploaded. The sign in is a friendly gate for the public demo, not a security control.
     </div>
   </div>
 </div>
@@ -51,20 +50,20 @@
   </div>
 
   <div id="intro">
-    <p class="tag-line">Reconstruct attacks from a packet capture. Everything below runs in your browser. Nothing is uploaded.</p>
-    <div class="drop" id="drop">
-      <div class="big">Drop a .pcap or .pcapng here</div>
-      <div class="small">or click to choose a file</div>
-    </div>
+    <p class="tag-line">NetHawk reconstructs attacks from a packet capture. Pick a scenario to see it work, or drop your own capture. Everything runs in your browser and nothing you open is uploaded.</p>
     <div class="samples">
-      <div class="samples-label">Or try a scenario:</div>
+      <div class="samples-label">See it in action &middot; start here</div>
       <div class="row">
-        <button class="btn samp" data-scenario="incident">C2 and exfiltration</button>
+        <button class="btn samp primary" data-scenario="incident">Reconstruct an intrusion</button>
         <button class="btn samp" data-scenario="dns_tunnel">DNS tunneling</button>
         <button class="btn samp" data-scenario="cleartext">Cleartext credentials</button>
         <button class="btn samp" data-scenario="scan">Port scan</button>
         <button class="btn samp" data-scenario="clean">Clean traffic</button>
       </div>
+    </div>
+    <div class="drop" id="drop">
+      <div class="big">Or drop your own .pcap or .pcapng</div>
+      <div class="small">click to choose a file</div>
     </div>
     <div id="err" class="err"></div>
     <input id="file" type="file" accept=".pcap,.pcapng,.cap" style="display:none">
