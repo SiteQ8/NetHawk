@@ -122,10 +122,12 @@
       + '<button data-tab="inc" class="active">Incidents</button>'
       + '<button data-tab="find">Findings</button>'
       + '<button data-tab="flow">Flows</button>'
+      + '<button data-tab="net">Network</button>'
       + '<button data-tab="traf">Traffic</button></div>';
     html += '<div id="p-inc" class="panel active"></div>';
     html += '<div id="p-find" class="panel"></div>';
     html += '<div id="p-flow" class="panel"></div>';
+    html += '<div id="p-net" class="panel"></div>';
     html += '<div id="p-traf" class="panel"></div>';
     html += '<p class="foot">Analyzed in your browser by NetHawk ' + esc(data.version || "") + ". Nothing was uploaded. Analyze only captures you are authorized to inspect.</p>";
 
@@ -137,7 +139,7 @@
         b.classList.add("active"); $("#p-" + b.getAttribute("data-tab")).classList.add("active");
       };
     });
-    renderIncidents(); renderFindings(); renderFlows(); renderTraffic();
+    renderIncidents(); renderFindings(); renderFlows(); renderNetwork(); renderTraffic();
   }
 
   function renderIncidents() {
@@ -228,9 +230,82 @@
     var q2 = $("#flq", el); q2.oninput = function () { flowQ = q2.value; var pos = q2.selectionStart; renderFlows(); var nq = $("#flq"); if (nq) { nq.focus(); try { nq.selectionStart = nq.selectionEnd = pos; } catch (e) {} } };
   }
 
+  function shortHost(h) {
+    if (h.indexOf(":") >= 0) return h.split(":").slice(-2).join(":");
+    var p = h.split("."); return p.length === 4 ? p.slice(-2).join(".") : h;
+  }
+
+  function renderNetwork() {
+    var el = $("#p-net");
+    var flows = DATA.flows || [];
+    if (!flows.length) { el.innerHTML = '<p class="muted">No conversations to graph.</p>'; return; }
+    var bytesBy = {}, edges = {};
+    flows.forEach(function (f) {
+      var w = f.bytes_out + f.bytes_in;
+      bytesBy[f.src] = (bytesBy[f.src] || 0) + w;
+      bytesBy[f.dst] = (bytesBy[f.dst] || 0) + w;
+      var k = f.src < f.dst ? f.src + "|" + f.dst : f.dst + "|" + f.src;
+      edges[k] = (edges[k] || 0) + w;
+    });
+    var hosts = Object.keys(bytesBy).sort(function (a, b) { return bytesBy[b] - bytesBy[a]; });
+    var cap = 40, shown = hosts.slice(0, cap);
+    var cx = 350, cy = 250, R = 200, N = shown.length;
+    var posByHost = {};
+    shown.forEach(function (h, i) {
+      var a = -Math.PI / 2 + 2 * Math.PI * i / Math.max(1, N);
+      posByHost[h] = { h: h, a: a, x: cx + R * Math.cos(a), y: cy + R * Math.sin(a) };
+    });
+    var internalSet = {}; (DATA.hosts_internal || []).forEach(function (h) { internalSet[h] = 1; });
+    var scores = DATA.host_scores || {};
+    var emax = Math.max.apply(null, Object.keys(edges).map(function (k) { return edges[k]; }).concat([1]));
+    var lines = "";
+    Object.keys(edges).forEach(function (k) {
+      var pr = k.split("|"); if (!posByHost[pr[0]] || !posByHost[pr[1]]) return;
+      var p1 = posByHost[pr[0]], p2 = posByHost[pr[1]];
+      var op = (0.06 + 0.5 * edges[k] / emax).toFixed(2);
+      lines += '<line x1="' + p1.x.toFixed(1) + '" y1="' + p1.y.toFixed(1) + '" x2="' + p2.x.toFixed(1) + '" y2="' + p2.y.toFixed(1) + '" stroke="var(--teal)" stroke-opacity="' + op + '" stroke-width="1"/>';
+    });
+    var bmax = Math.max.apply(null, shown.map(function (h) { return bytesBy[h]; }).concat([1]));
+    var nodes = "", labels = "";
+    shown.forEach(function (h) {
+      var p = posByHost[h], sc = scores[h] || 0;
+      var color = sc >= 70 ? "var(--crit)" : sc >= 40 ? "var(--yellow)" : internalSet[h] ? "var(--teal)" : "var(--dim)";
+      var r = (4 + 9 * Math.sqrt(bytesBy[h] / bmax)).toFixed(1);
+      nodes += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="' + r + '" fill="' + color + '" fill-opacity="0.92" stroke="#0d0e14" stroke-width="1"><title>' + esc(h) + (sc ? " \u00b7 risk " + sc : "") + " \u00b7 " + fmtBytes(bytesBy[h]) + "</title></circle>";
+      if (sc >= 40 || bytesBy[h] >= 0.14 * bmax) {
+        var lx = cx + (R + 12) * Math.cos(p.a), ly = cy + (R + 12) * Math.sin(p.a);
+        var anchor = Math.cos(p.a) < -0.3 ? "end" : (Math.cos(p.a) > 0.3 ? "start" : "middle");
+        labels += '<text x="' + lx.toFixed(1) + '" y="' + (ly + 3).toFixed(1) + '" text-anchor="' + anchor + '" font-size="10" fill="var(--dim)">' + esc(shortHost(h)) + "</text>";
+      }
+    });
+    var legend = '<div class="legend">'
+      + '<span><i style="background:var(--crit)"></i> high risk</span>'
+      + '<span><i style="background:var(--yellow)"></i> elevated</span>'
+      + '<span><i style="background:var(--teal)"></i> internal</span>'
+      + '<span><i style="background:var(--dim)"></i> external</span></div>';
+    var note = hosts.length > cap ? '<p class="note">Showing the ' + cap + " busiest hosts of " + hosts.length + ". Node size is total traffic; edges are conversations.</p>"
+      : '<p class="note">Node size is total traffic; edges are conversations.</p>';
+    el.innerHTML = "<h2>Host graph</h2>" + legend
+      + '<div class="chart"><svg viewBox="0 0 700 500" class="netsvg" preserveAspectRatio="xMidYMid meet">' + lines + nodes + labels + "</svg></div>" + note;
+  }
+
+  function activityChart(act) {
+    if (!act || !act.buckets || act.buckets.length < 2) return "";
+    var b = act.buckets, n = b.length;
+    var max = Math.max.apply(null, b.map(function (x) { return x.bytes; }).concat([1]));
+    var W = n * 10, H = 120, bars = "";
+    b.forEach(function (x, i) {
+      var bh = Math.max(0, Math.round((H - 6) * x.bytes / max));
+      bars += '<rect x="' + (i * 10 + 1) + '" y="' + (H - bh) + '" width="8" height="' + bh + '" fill="var(--teal)" fill-opacity="0.85"><title>' + clock(x.t) + "  " + fmtBytes(x.bytes) + "  " + x.packets + " pkts</title></rect>";
+    });
+    var endT = b[n - 1].t + (act.bucket_seconds || 0);
+    return "<h2>Activity over time</h2><div class=\"chart\"><svg viewBox=\"0 0 " + W + " " + H + "\" preserveAspectRatio=\"none\" class=\"tsvg\">" + bars + "</svg></div>"
+      + '<div class="axis"><span>' + clock(b[0].t) + "</span><span>peak " + fmtBytes(max) + "</span><span>" + clock(endT) + "</span></div>";
+  }
+
   function renderTraffic() {
     var el = $("#p-traf"); var st = DATA.stats || {};
-    var h = "";
+    var h = activityChart(st.activity);
     var protos = st.protocols || {}; var pk = Object.keys(protos); var pmax = Math.max.apply(null, pk.map(function (k) { return protos[k]; }).concat([1]));
     h += "<h2>Protocols</h2><table>";
     pk.forEach(function (k) { h += '<tr><td class="mono">' + esc(k) + '</td><td class="mono">' + protos[k] + ' flows</td><td><div class="bar"><span style="width:' + (100 * protos[k] / pmax) + '%;background:var(--violet)"></span></div></td></tr>'; });
@@ -255,6 +330,18 @@
     document.body.removeChild(a); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
   function exportJson() { if (DATA) download("nethawk-report.json", JSON.stringify(DATA, null, 2), "application/json"); }
+  function exportIndicators() {
+    if (!DATA) return;
+    var set = {};
+    (DATA.findings || []).forEach(function (f) {
+      if (f.dst) set[f.dst] = 1;
+      ["domain", "parent", "indicator", "host"].forEach(function (k) { if (f.evidence && f.evidence[k]) set[f.evidence[k]] = 1; });
+    });
+    (DATA.incidents || []).forEach(function (i) { (i.indicators || []).forEach(function (x) { if (x) set[x] = 1; }); });
+    var lines = Object.keys(set).filter(Boolean).sort();
+    var text = "# NetHawk indicators from " + DATA_NAME + "\n# " + lines.length + " indicators\n" + lines.join("\n") + "\n";
+    download("nethawk-indicators.txt", text, "text/plain");
+  }
   function exportHtml() {
     if (!DATA) return;
     fetch("app/styles.css").then(function (r) { return r.text(); }).then(function (css) {
@@ -274,11 +361,11 @@
   window.addEventListener("load", function () {
     // login form
     var form = $("#login-form");
-    form.addEventListener("submit", function (e) {
+    if (form) form.addEventListener("submit", function (e) {
       e.preventDefault();
       signIn($("#username").value.trim(), $("#password").value);
     });
-    if (sessionStorage.getItem(SESSION_KEY) === "1") showApp();
+    try { if (sessionStorage.getItem(SESSION_KEY) === "1") showApp(); } catch (e) {}
 
     // dropzone
     var dz = $("#drop"), fi = $("#file");
@@ -297,6 +384,7 @@
     $("#signout").addEventListener("click", signOut);
     $("#again").addEventListener("click", function () { DATA = null; $("#dash").innerHTML = ""; $("#exports").classList.add("hidden"); $("#intro").classList.remove("hidden"); $("#err").textContent = ""; });
     $("#dl-json").addEventListener("click", exportJson);
+    $("#dl-ioc").addEventListener("click", exportIndicators);
     $("#dl-html").addEventListener("click", exportHtml);
 
     // Optional preview mode: render a supplied analysis without a file.

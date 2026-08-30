@@ -760,18 +760,40 @@
       established: established(f), reset: f.saw_rst, sni: f.sni, http_host: f.http_host, user_agent: f.user_agent, resolved: !!(f.sni || f.http_host) };
   }
 
+  function computeActivity(packets, first, last, nb) {
+    nb = nb || 48;
+    if (!packets.length) return { bucket_seconds: 0, start: first, buckets: [] };
+    var span = last - first;
+    if (span <= 0) {
+      var total = 0; packets.forEach(function (p) { total += p.length; });
+      return { bucket_seconds: 0, start: first, buckets: [{ t: first, bytes: total, packets: packets.length }] };
+    }
+    var bs = span / nb, byts = [], pkts = [], i;
+    for (i = 0; i < nb; i++) { byts[i] = 0; pkts[i] = 0; }
+    packets.forEach(function (p) {
+      var idx = Math.floor((p.ts - first) / span * nb);
+      if (idx < 0) idx = 0; else if (idx >= nb) idx = nb - 1;
+      byts[idx] += p.length; pkts[idx] += 1;
+    });
+    var buckets = [];
+    for (i = 0; i < nb; i++) buckets.push({ t: first + i * bs, bytes: byts[i], packets: pkts[i] });
+    return { bucket_seconds: bs, start: first, buckets: buckets };
+  }
+
   function analyze(buf, cfg) {
     cfg = mergeCfg(cfg);
     var packets = readPackets(buf).map(function (p) { return decode(p.ts, p.linktype, p.data); }).filter(Boolean);
     var built = buildFlows(packets);
     var findings = runDetectors(built, cfg);
     var incidents = correlate(findings, built.flows, built.dnsEvents, built.ipDomain);
+    var stats = computeStats(built.flows);
+    stats.activity = computeActivity(packets, built.first, built.last);
     return {
       tool: "nethawk", version: VERSION, path: "capture.pcap",
       packet_count: built.count, duration: +Math.max(0, built.last - built.first).toFixed(3),
       first_ts: built.first, last_ts: built.last,
       hosts_internal: built.internal, hosts_external: built.external,
-      host_scores: scoreHosts(findings), stats: computeStats(built.flows),
+      host_scores: scoreHosts(findings), stats: stats,
       flows: built.flows.map(flowDict), findings: findings, incidents: incidents
     };
   }
