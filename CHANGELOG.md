@@ -7,20 +7,31 @@ Keep a Changelog, and the project uses semantic versioning.
 
 ### Tuned
 
-* Fewer false positives on real traffic. The external fan out detector now only
-  fires when the connections are mostly unanswered, which looks like scanning, so
-  a normal browser reaching many external hosts no longer trips it. The beaconing
-  detector now needs eight connections rather than six, for a steadier read of
-  periodicity. Both thresholds stay adjustable.
+* Far fewer beaconing false positives on real traffic. Beaconing now needs the
+  connections to be at least ten seconds apart by default, because real command
+  and control beacons slowly to stay quiet while sub interval traffic is
+  application keepalive or streaming. On a real capture this cut beacon findings
+  from 57 to 5 without losing the slow, stealthy ones. The floor is adjustable
+  with `--beacon-min-interval`.
+* The external fan out detector now only fires when the connections are mostly
+  unanswered, which looks like scanning, so a normal browser reaching many
+  external hosts no longer trips it. Beaconing also needs eight connections
+  rather than six, for a steadier read of periodicity. Both thresholds stay
+  adjustable.
 
 ### Validated
 
-* Ran the detectors against real enterprise traffic, about fourteen thousand
-  packets across several captures. Before this tuning they produced a handful of
-  false positives on ordinary browsing and polling; after it they produce none,
-  while still catching every threat in the demo scenarios and the scan style fan
-  out covered by the tests. The Python and browser engines were confirmed to
-  agree on all of these captures.
+* Ran NetHawk over a 350 MB real capture of about 800,000 packets. It finished in
+  under ten seconds using around 130 MB of memory, since the reader streams the
+  capture rather than loading it whole. On that capture the tuning above brought
+  the findings down from 65 to 13, leaving the slow beacons, the large uploads,
+  the cleartext services, and the automation user agents that are worth a look.
+* Also ran the detectors against smaller real captures totalling several thousand
+  more packets, where after tuning they produce no false positives while still
+  catching every threat in the demo scenarios and the scan style fan out covered
+  by the tests. The Python and browser engines agree on all of these captures.
+  A large capture dropped into the browser demo now shows a friendly notice, and
+  the command line tool is the better path for very large files.
 
 ## [0.3.0] - 2025
 
