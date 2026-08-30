@@ -73,12 +73,12 @@
       }
     }, 30);
   }
-  function loadSample() {
+  function loadSample(file, name) {
     $("#err").textContent = "";
-    fetch("sample.pcap").then(function (r) {
-      if (!r.ok) throw new Error("could not load the sample");
+    fetch(file).then(function (r) {
+      if (!r.ok) throw new Error("could not load the capture");
       return r.arrayBuffer();
-    }).then(function (b) { DATA_NAME = "sample.pcap"; analyzeBuffer(b); })
+    }).then(function (b) { DATA_NAME = name || "sample.pcap"; analyzeBuffer(b); })
       .catch(function (e) { $("#err").textContent = String(e.message || e); });
   }
   var DATA_NAME = "capture.pcap";
@@ -264,7 +264,7 @@
         + "<meta name='viewport' content='width=device-width,initial-scale=1'>"
         + "<title>NetHawk report</title><style>" + css + "\n.panel{display:block!important}\nbody{padding:0}</style>"
         + "</head><body><div class='wrap'><div class='topbar'><div class='brand'>"
-        + "<span style='font-size:22px'>&#128052;</span><h1>NetHawk report</h1></div></div>"
+        + "<span style='font-size:22px'>&#129413;</span><h1>NetHawk report</h1></div></div>"
         + clone.innerHTML + "</div></body></html>";
       download("nethawk-report.html", doc, "text/html");
     });
@@ -291,7 +291,9 @@
     });
     fi.addEventListener("change", function () { if (fi.files.length) { DATA_NAME = fi.files[0].name; fi.files[0].arrayBuffer().then(analyzeBuffer); } });
 
-    $("#sample").addEventListener("click", loadSample);
+    Array.prototype.forEach.call(document.querySelectorAll(".samp"), function (b) {
+      b.addEventListener("click", function () { loadSample(b.getAttribute("data-file"), b.getAttribute("data-name")); });
+    });
     $("#signout").addEventListener("click", signOut);
     $("#again").addEventListener("click", function () { DATA = null; $("#dash").innerHTML = ""; $("#exports").classList.add("hidden"); $("#intro").classList.remove("hidden"); $("#err").textContent = ""; });
     $("#dl-json").addEventListener("click", exportJson);

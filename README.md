@@ -20,10 +20,12 @@ NetHawk reads a pcap and tells you the story inside it. It parses the traffic, r
 
 ## Live demo
 
-There is a hosted demo that runs the whole tool in your browser at **https://siteq8.github.io/NetHawk/**. Sign in with username `demo` and password `nethawk`, then drop a capture in or load the bundled sample. The analysis engine is ported to JavaScript and runs client side, so nothing you open is uploaded anywhere. The sign in is a front door for the public demo, not a security control.
+There is a hosted demo that runs the whole tool in your browser at **https://siteq8.github.io/NetHawk/**. Sign in with username `demo` and password `nethawk`, then drop a capture in or try one of the built in scenarios: a full intrusion with command and control and exfiltration, DNS tunneling, credentials sent in clear text, a port scan, or clean traffic with nothing to find. The analysis engine is ported to JavaScript and runs client side, so nothing you open is uploaded anywhere. The sign in is a front door for the public demo, not a security control.
 
 <div align="center">
-<img src="docs/pages_login.png" width="620" alt="The demo sign in screen" />
+<img src="docs/pages_login.png" width="600" alt="The demo sign in screen" />
+<br><br>
+<img src="docs/pages_app.png" width="600" alt="The demo home with the scenario gallery" />
 </div>
 
 ## The web GUI

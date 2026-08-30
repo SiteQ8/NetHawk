@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NetHawk &middot; threat hunting in your browser</title>
 <meta name="description" content="NetHawk reconstructs attacks from a packet capture. This demo runs entirely in your browser.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%85%3C/text%3E%3C/svg%3E">
+<style>html,body{background:#0d0e14;margin:0}.hidden{display:none!important}</style>
 <link rel="stylesheet" href="app/styles.css">
 </head>
 <body>
@@ -12,7 +14,7 @@
 <!-- login gate (demo only) -->
 <div id="login" class="login">
   <div class="login-card">
-    <div class="logo"><span style="font-size:24px">&#128052;</span><h1>NetHawk</h1></div>
+    <div class="logo"><span style="font-size:24px">&#129413;</span><h1>NetHawk</h1></div>
     <p class="sub">Sign in to the demo</p>
     <form id="login-form" autocomplete="off">
       <div class="field">
@@ -36,7 +38,7 @@
 <!-- app -->
 <div id="app" class="wrap hidden">
   <div class="topbar">
-    <div class="brand"><span style="font-size:20px">&#128052;</span><h1>NetHawk</h1><span class="v" id="ver">demo</span></div>
+    <div class="brand"><span style="font-size:20px">&#129413;</span><h1>NetHawk</h1><span class="v" id="ver">demo</span></div>
     <div class="spacer"></div>
     <div id="exports" class="hidden">
       <button class="btn ghost" id="again">Analyze another</button>
@@ -52,8 +54,15 @@
       <div class="big">Drop a .pcap or .pcapng here</div>
       <div class="small">or click to choose a file</div>
     </div>
-    <div class="row">
-      <button class="btn" id="sample">Load the sample capture</button>
+    <div class="samples">
+      <div class="samples-label">Or try a scenario:</div>
+      <div class="row">
+        <button class="btn samp" data-file="samples/incident.pcap" data-name="incident.pcap">C2 and exfiltration</button>
+        <button class="btn samp" data-file="samples/dns_tunnel.pcap" data-name="dns_tunnel.pcap">DNS tunneling</button>
+        <button class="btn samp" data-file="samples/cleartext.pcap" data-name="cleartext.pcap">Cleartext credentials</button>
+        <button class="btn samp" data-file="samples/scan.pcap" data-name="scan.pcap">Port scan</button>
+        <button class="btn samp" data-file="samples/clean.pcap" data-name="clean.pcap">Clean traffic</button>
+      </div>
     </div>
     <div id="err" class="err"></div>
     <input id="file" type="file" accept=".pcap,.pcapng,.cap" style="display:none">

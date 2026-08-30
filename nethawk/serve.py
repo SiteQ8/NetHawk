@@ -307,7 +307,7 @@ window.addEventListener('load',function(){
 _PAGE = """<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>NetHawk</title><style>/*CSS*/</style></head><body><div class="wrap">
-<div class="brand"><h1>&#128052; NetHawk</h1><span class="v">/*VER*/</span></div>
+<div class="brand"><h1>&#129413; NetHawk</h1><span class="v">/*VER*/</span></div>
 <p class="tag">Reconstruct attacks from a packet capture. Drop a capture below to analyze it in your browser.</p>
 <div id="intro">
   <div class="drop" id="drop">
@@ -344,7 +344,7 @@ def render_preview(embedded_json: str) -> str:
     """A self contained, populated page with no network calls, for screenshots."""
     return ("<!doctype html><html lang='en'><head><meta charset='utf-8'>"
             f"<style>{_CSS}</style></head><body><div class='wrap'>"
-            "<div class='brand'><h1>&#128052; NetHawk</h1>"
+            "<div class='brand'><h1>&#129413; NetHawk</h1>"
             f"<span class='v'>{__version__}</span></div>"
             "<div id='intro' style='display:none'></div><div id='dash'></div></div>"
             f"<script>{_JS_CORE}\nwindow.__EMBEDDED__={embedded_json};render(window.__EMBEDDED__);</script>"
