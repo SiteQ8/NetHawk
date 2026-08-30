@@ -140,5 +140,20 @@ class TestEnrichedDetectors(unittest.TestCase):
         self.assertTrue(scan.mitre and scan.mitre[0]["id"] == "T1046")
 
 
+
+class TestIncidentSummary(unittest.TestCase):
+    def test_summary_reads_well(self):
+        from nethawk.analyzer import analyze
+        import os
+        sample = os.path.join(os.path.dirname(__file__), "..", "examples", "sample.pcap")
+        if not os.path.exists(sample):
+            self.skipTest("sample not built")
+        a = analyze(sample, Config())
+        top = a.incidents[0]
+        self.assertTrue(top.summary.startswith(top.host + ":"))
+        self.assertIn("confidence", top.summary)
+        self.assertIn("It involved", top.summary)
+
+
 if __name__ == "__main__":
     unittest.main()

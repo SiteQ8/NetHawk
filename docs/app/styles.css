@@ -107,6 +107,7 @@ border-radius:8px;padding:8px 12px;font-size:14px;min-width:220px}
 .clickrow:hover td{background:rgba(255,255,255,0.03)}
 tr.on td{background:rgba(61,214,196,0.10)}
 .host[data-host]:hover{color:var(--teal)}
+.summary{color:#c7ccd6;font-size:14px;margin:10px 0 2px;line-height:1.55}
 .samples{margin-top:18px}
 .samples-label{color:var(--dim);font-size:13px;margin-bottom:8px;text-align:center}
 .panel{overflow-x:auto}

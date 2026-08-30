@@ -85,6 +85,7 @@ padding:6px 14px;font-size:13px;cursor:pointer}
 .clickrow:hover td{background:rgba(255,255,255,0.03)}
 tr.on td{background:rgba(61,214,196,0.10)}
 .host[data-host]:hover{color:var(--teal)}
+.summary{color:#c7ccd6;font-size:14px;margin:10px 0 2px;line-height:1.55}
 .panel{display:none}.panel.active{display:block}
 .inc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:17px 19px;margin-bottom:15px}
 .inc .top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
@@ -249,7 +250,7 @@ function renderIncidents(){
   inc.forEach(function(i){
     h+='<div class="inc"><div class="top"><div><span class="host mono" data-host="'+esc(i.host)+'">'+esc(i.host)+'</span> <span>&middot; '+esc(i.hypothesis)+'</span></div>'
       +'<span class="pill" style="background:'+confColor(i.confidence)+'">confidence '+i.confidence+'%</span></div>';
-    if(i.indicators&&i.indicators.length) h+='<div class="ind">indicators: '+esc(i.indicators.join(', '))+'</div>';
+    if(i.summary) h+='<p class="summary">'+esc(i.summary)+'</p>';
     if(i.timeline&&i.timeline.length){h+='<ul class="tl">';
       i.timeline.forEach(function(e){h+='<li><span class="t">'+clock(e.ts)+'</span>'+esc(e.text)+'</li>';});
       h+='</ul>';}

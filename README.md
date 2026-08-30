@@ -29,10 +29,10 @@ There is a hosted demo that runs the whole tool in your browser at **https://sit
 
 ## The web GUI
 
-Run `nethawk serve` and open the printed address. Drop a capture into the page and it is analyzed locally: summary cards, host risk, reconstructed incidents with a visual attack timeline, a findings list with the observed ATT&CK techniques grouped by tactic, a host graph, a flows explorer, and traffic statistics with an activity over time chart. Click any host, in the risk table, the graph, or an incident, and every view focuses on it: the findings and flows filter to that host and the graph highlights it and its neighbors. You can export the result as JSON, as a list of indicators, or as a standalone HTML report. The whole interface is one document with no framework and no external resource, served by the standard library. The hosted demo above is the same interface, with the engine compiled to run in the browser.
+Run `nethawk serve` and open the printed address. Drop a capture into the page and it is analyzed locally: summary cards, host risk, reconstructed incidents each written up as a plain English summary with a visual attack timeline, a findings list with the observed ATT&CK techniques grouped by tactic, a host graph, a flows explorer, and traffic statistics with an activity over time chart. Click any host, in the risk table, the graph, or an incident, and every view focuses on it: the findings and flows filter to that host and the graph highlights it and its neighbors. You can export the result as JSON, as a list of indicators, or as a standalone HTML report. The whole interface is one document with no framework and no external resource, served by the standard library. The hosted demo above is the same interface, with the engine compiled to run in the browser.
 
 <div align="center">
-<img src="docs/gui.png" width="760" alt="The dashboard with a visual attack timeline across the compromised and scanning hosts" />
+<img src="docs/gui.png" width="760" alt="An incident written up in plain English, above its attack timeline" />
 <br><br>
 <img src="docs/gui_focus.png" width="760" alt="The host graph focused on the compromised host, with its neighbors highlighted and the rest dimmed" />
 <br><br>
