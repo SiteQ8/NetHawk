@@ -80,7 +80,8 @@ def _read_pcapng(data: bytes) -> Iterator[Tuple[float, int, bytes]]:
         btype = data[off:off + 4]
         if btype == _PCAPNG_MAGIC:
             bom = data[off + 8:off + 12]
-            if bom == b"\x4d\x3c\x2b\x1a":
+            # Bytes 1a2b3c4d in file order mean big endian; 4d3c2b1a mean little.
+            if bom == b"\x1a\x2b\x3c\x4d":
                 endian = ">"
             else:
                 endian = "<"
