@@ -39,13 +39,39 @@ def compute_stats(flows: List[Flow]) -> Dict:
     }
 
 
+def compute_activity(samples, first, last, nb=48):
+    """Bucket packet bytes and counts across the capture for a time series."""
+    if not samples:
+        return {"bucket_seconds": 0.0, "start": first, "buckets": []}
+    span = last - first
+    if span <= 0:
+        total = sum(length for _, length in samples)
+        return {"bucket_seconds": 0.0, "start": first,
+                "buckets": [{"t": first, "bytes": total, "packets": len(samples)}]}
+    bs = span / nb
+    byts = [0] * nb
+    pkts = [0] * nb
+    for ts, length in samples:
+        idx = int((ts - first) / span * nb)
+        if idx < 0:
+            idx = 0
+        elif idx >= nb:
+            idx = nb - 1
+        byts[idx] += length
+        pkts[idx] += 1
+    buckets = [{"t": first + i * bs, "bytes": byts[i], "packets": pkts[i]} for i in range(nb)]
+    return {"bucket_seconds": bs, "start": first, "buckets": buckets}
+
+
 def analyze(path: str, cfg: Config = None) -> Analysis:
     cfg = cfg or Config()
     table = FlowTable()
+    samples = []
     for ts, linktype, data in read_packets(path):
         packet = decode(ts, linktype, data)
         if packet is not None:
             table.add(packet)
+            samples.append((packet.ts, packet.length))
 
     flows, internal, external = table.finalize()
     findings = run_detectors(flows, table.dns_events, table.ip_domain, cfg)
@@ -64,6 +90,7 @@ def analyze(path: str, cfg: Config = None) -> Analysis:
     analysis.host_scores = score_hosts(findings)
     analysis.incidents = correlate(findings, flows, table.dns_events, table.ip_domain)
     analysis.stats = compute_stats(flows)
+    analysis.stats["activity"] = compute_activity(samples, analysis.first_ts, analysis.last_ts)
     return analysis
 
 

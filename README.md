@@ -29,14 +29,16 @@ There is a hosted demo that runs the whole tool in your browser at **https://sit
 
 ## The web GUI
 
-Run `nethawk serve` and open the printed address. Drop a capture into the page and it is analyzed locally: summary cards, host risk, reconstructed incidents with timelines, a searchable findings list with the MITRE ATT&CK techniques each finding maps to, a flows explorer, and traffic statistics. The whole interface is one document with no framework and no external resource, served by the standard library. The hosted demo above is the same interface, with the engine compiled to run in the browser.
+Run `nethawk serve` and open the printed address. Drop a capture into the page and it is analyzed locally: summary cards, host risk, reconstructed incidents with timelines, a searchable findings list with the MITRE ATT&CK techniques each finding maps to, a host graph, a flows explorer, and traffic statistics with an activity over time chart. You can export the result as JSON, as a list of indicators, or as a standalone HTML report. The whole interface is one document with no framework and no external resource, served by the standard library. The hosted demo above is the same interface, with the engine compiled to run in the browser.
 
 <div align="center">
 <img src="docs/gui.png" width="760" alt="The NetHawk dashboard showing reconstructed incidents" />
 <br><br>
+<img src="docs/gui_network.png" width="760" alt="The host graph, with the compromised host and its exfiltration target standing out" />
+<br><br>
 <img src="docs/gui_findings.png" width="760" alt="The findings view with MITRE ATT&CK techniques" />
 <br><br>
-<img src="docs/gui_flows.png" width="760" alt="The flows explorer, a sortable and searchable table of every conversation" />
+<img src="docs/gui_traffic.png" width="760" alt="Traffic statistics with an activity over time chart showing the exfiltration burst" />
 </div>
 
 ```bash

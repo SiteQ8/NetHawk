@@ -16,8 +16,11 @@ Keep a Changelog, and the project uses semantic versioning.
   the techniques are shown in the text report, the HTML report, and both GUIs.
 * Two more detectors: sensitive services in clear text such as FTP and Telnet,
   and a single host reaching an unusually large number of external destinations.
-* Export from the demo: download the full result as JSON or as a standalone
-  HTML report.
+* Export from the demo: download the full result as JSON, a list of indicators,
+  or a standalone HTML report.
+* Visualizations in both GUIs: a host graph that draws the conversation between
+  hosts and makes risky hosts stand out, and an activity over time chart that
+  surfaces bursts such as a large transfer.
 
 ## [0.2.0] - 2025
 
