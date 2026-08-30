@@ -74,9 +74,12 @@ def _link(linktype: int, data: bytes):
 
 
 def _ethertype(et: int, data: bytes, off: int):
-    if et == 0x8100 and len(data) >= off + 4:  # vlan tag
+    # Strip any stack of VLAN tags: 802.1Q (0x8100) and 802.1ad QinQ (0x88a8).
+    hops = 0
+    while et in (0x8100, 0x88A8) and len(data) >= off + 4 and hops < 4:
         et = struct.unpack("!H", data[off + 2:off + 4])[0]
         off += 4
+        hops += 1
     if et == 0x0800:
         return "ip4", data, off
     if et == 0x86DD:

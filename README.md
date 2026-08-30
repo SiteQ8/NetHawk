@@ -27,6 +27,8 @@ There is a hosted demo that runs the whole tool in your browser at **https://sit
 <img src="docs/pages_app.png" width="600" alt="The demo home with the scenario gallery" />
 </div>
 
+NetHawk reads pcap and pcapng in either byte order, and decodes Ethernet (including stacked VLAN and 802.1ad QinQ tags), Linux cooked capture, raw IP, IPv4 and IPv6, and TCP, UDP, and ICMP. It has been run against more than eighty real captures from the tcpdump test corpus without crashing.
+
 ## The web GUI
 
 Run `nethawk serve` and open the printed address. Drop a capture into the page and it is analyzed locally: summary cards, host risk, reconstructed incidents each written up as a plain English summary with a visual attack timeline, a findings list with the observed ATT&CK techniques grouped by tactic, a host graph, a flows explorer, and traffic statistics with an activity over time chart. Expand any incident to see the exact findings and flows behind it, so nothing is a black box. Click any host, in the risk table, the graph, or an incident, and every view focuses on it: the findings and flows filter to that host and the graph highlights it and its neighbors. Keyboard shortcuts move you around fast: number keys switch tabs, the arrow keys step through hosts by risk, and escape clears the focus. You can export the result as JSON, as a list of indicators, or as a standalone HTML report. The whole interface is one document with no framework and no external resource, served by the standard library. The hosted demo above is the same interface, with the engine compiled to run in the browser.

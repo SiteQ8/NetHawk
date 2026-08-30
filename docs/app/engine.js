@@ -85,7 +85,7 @@
       var bt = hex4(u.subarray(off, off + 4));
       if (bt === "0a0d0d0a") {
         var bom = hex4(u.subarray(off + 8, off + 12));
-        le = (bom !== "4d3c2b1a");
+        le = (bom !== "1a2b3c4d");
         var totalS = rd32(u, off + 4, le);
         if (totalS < 12 || off + totalS > n) break;
         off += totalS; continue;
@@ -139,7 +139,8 @@
     return null;
   }
   function ethertype(et, d, off) {
-    if (et === 0x8100 && d.length >= off + 4) { et = b16(d, off + 2); off += 4; }
+    var hops = 0;
+    while ((et === 0x8100 || et === 0x88a8) && d.length >= off + 4 && hops < 4) { et = b16(d, off + 2); off += 4; hops++; }
     if (et === 0x0800) return { et: "ip4", off: off };
     if (et === 0x86dd) return { et: "ip6", off: off };
     if (et === 0x0806) return { et: "arp", off: off };

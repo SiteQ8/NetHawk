@@ -5,6 +5,22 @@ Keep a Changelog, and the project uses semantic versioning.
 
 ## [0.3.0] - 2025
 
+### Fixed
+
+* pcapng little endian files were read with the byte order test inverted, so a
+  standard Wireshark pcapng could yield zero packets. Both engines now read
+  little and big endian pcapng correctly.
+* 802.1ad QinQ double tagged frames were dropped. The decoders now strip a stack
+  of VLAN tags, both 802.1Q and 802.1ad, to reach the inner packet.
+
+### Validated
+
+* Ran NetHawk over more than eighty real captures from the tcpdump test corpus,
+  spanning IPv6, VLAN and QinQ, GRE, VXLAN, ESP, OSPF, BGP, DHCP, LLDP, and
+  deliberately malformed fuzzing cases. It parsed all of them without crashing,
+  which fixed the two bugs above and confirmed malformed packets are rejected
+  rather than misread. Format accurate regression tests now cover these.
+
 ### Added
 
 * A hosted demo on GitHub Pages that runs entirely in the browser. The full
