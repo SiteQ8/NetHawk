@@ -2,9 +2,9 @@
 
 # 🦅 NetHawk
 
-### Reconstruct attacks from a packet capture.
+### Reconstruct attacks from a packet capture
 
-NetHawk reads a pcap and tells you the story inside it. It parses the traffic, rebuilds the conversations, finds the suspicious behavior, and then correlates those signals into incidents with a timeline and a confidence score. Instead of a wall of alerts, you get a short answer to the question that matters: what happened, on which host, and how sure are we. Use it from the command line, or open the built in web dashboard. One single, zero dependency Python tool you can drop onto an incident response box with nothing to install.
+Drop in a capture and NetHawk rebuilds the conversations, flags the suspicious behavior, and correlates it into incidents, each with a timeline, a confidence score, and a plain English writeup. Not a wall of alerts, but a short answer to what happened, on which host, and how sure it is.
 
 [![Live demo](https://img.shields.io/badge/live%20demo-online-3DD6C4?style=flat-square)](https://siteq8.github.io/NetHawk/)
 [![Release](https://img.shields.io/badge/release-v0.3.0-8B5CF6?style=flat-square)](https://github.com/SiteQ8/NetHawk/releases/latest)
@@ -12,15 +12,25 @@ NetHawk reads a pcap and tells you the story inside it. It parses the traffic, r
 ![Zero dependencies](https://img.shields.io/badge/dependencies-none-F5C542?style=flat-square)
 ![Python](https://img.shields.io/badge/python-3.9%2B-8B5CF6?style=flat-square)
 
+**[Try it live in your browser](https://siteq8.github.io/NetHawk/)** (no install, and nothing you open is uploaded)
+
 <br>
 
 <img src="docs/demo.gif" width="820" alt="NetHawk analyzing a capture and reconstructing an incident" />
 
 </div>
 
+## Why you would use it
+
+* **Answers, not alerts.** Each incident becomes a timeline with a confidence score and a plain English summary you can paste straight into a ticket.
+* **Installs nothing.** One zero dependency Python tool, plus a browser demo that needs no install at all.
+* **Reads real captures.** pcap and pcapng in either byte order, IPv4 and IPv6, VLAN and QinQ, checked against more than eighty real captures.
+* **Private by default.** The browser demo analyzes your capture locally and never uploads it, and the tool only ever reads captures, never sends traffic.
+* **Nothing to take on trust.** Every finding shows the evidence behind it and maps to a MITRE ATT&CK technique.
+
 ## Live demo
 
-There is a hosted demo that runs the whole tool in your browser at **https://siteq8.github.io/NetHawk/**. Sign in with username `demo` and password `nethawk`, then drop a capture in or try one of the built in scenarios: a full intrusion with command and control and exfiltration, DNS tunneling, credentials sent in clear text, a port scan, or clean traffic with nothing to find. The analysis engine is ported to JavaScript and runs client side, so nothing you open is uploaded anywhere. The view is shareable: the address bar updates as you pick a scenario, switch tabs, and focus a host, so a link reopens exactly what you were looking at. The sign in is a front door for the public demo, not a security control.
+Open [the hosted demo](https://siteq8.github.io/NetHawk/) and press **Enter the demo**; the credentials are already filled in. Then pick a scenario, an intrusion with command and control and exfiltration, DNS tunneling, credentials sent in clear text, a port scan, or clean traffic with nothing to find, or drop your own capture. The analysis engine is ported to JavaScript and runs client side, so nothing you open leaves your browser. The view is shareable too: the address bar updates as you pick a scenario, switch tabs, and focus a host, so a link reopens exactly what you were looking at.
 
 <div align="center">
 <img src="docs/pages_login.png" width="600" alt="The demo sign in screen" />
