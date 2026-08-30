@@ -35,6 +35,12 @@ def _finding_headline(f: Finding) -> str:
         return f"Possible DNS tunneling to {f.dst}"
     if f.category == "dga":
         return "High rate of failed DNS lookups"
+    if f.category == "cleartext_creds":
+        return f"Credentials sent in clear text to {f.evidence.get('host', f.dst)}"
+    if f.category == "long_connection":
+        return f"Long lived connection to {f.dst} on port {f.evidence.get('port', '')}"
+    if f.category == "rare_user_agent":
+        return f"Automation user agent seen: {f.evidence.get('user_agent', '')}"
     if f.category == "ioc":
         return f"Contact with known indicator {f.evidence.get('indicator', f.dst)}"
     return f.title
@@ -54,6 +60,8 @@ def _hypothesis(cats: set) -> str:
         return "Possible DNS tunneling or covert channel"
     if has("exfil"):
         return "Possible data exfiltration"
+    if has("cleartext_creds"):
+        return "Credentials exposed in clear text"
     if has("port_scan"):
         return "Possible internal reconnaissance"
     if has("dga"):
@@ -65,7 +73,8 @@ def _confidence(findings: List[Finding]) -> int:
     cats = {f.category for f in findings}
     base = {
         "ioc": 75, "beacon": 55, "dns_tunnel": 55, "exfil": 55,
-        "port_scan": 50, "dga": 45,
+        "cleartext_creds": 60, "port_scan": 50, "dga": 45,
+        "long_connection": 35, "rare_user_agent": 30,
     }
     start = max((base.get(c, 35) for c in cats), default=35)
     conf = start + (len(cats) - 1) * 10

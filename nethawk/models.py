@@ -47,6 +47,8 @@ class Flow:
     saw_fin: bool = False
     sni: str = ""
     http_host: str = ""
+    user_agent: str = ""
+    http_auth: bool = False
 
     @property
     def key(self) -> Tuple:
@@ -76,6 +78,8 @@ class Flow:
             "established": self.established,
             "reset": self.saw_rst,
             "sni": self.sni, "http_host": self.http_host,
+            "user_agent": self.user_agent,
+            "resolved": bool(self.sni or self.http_host),
         }
 
 
@@ -162,6 +166,7 @@ class Analysis:
     host_scores: Dict[str, int] = field(default_factory=dict)
     hosts_internal: List[str] = field(default_factory=list)
     hosts_external: List[str] = field(default_factory=list)
+    stats: Dict = field(default_factory=dict)
 
     @property
     def duration(self) -> float:
@@ -177,6 +182,7 @@ class Analysis:
             "hosts_internal": self.hosts_internal,
             "hosts_external": self.hosts_external,
             "host_scores": self.host_scores,
+            "stats": self.stats,
             "flows": [f.to_dict() for f in self.flows],
             "findings": [f.to_dict() for f in self.findings],
             "incidents": [i.to_dict() for i in self.incidents],

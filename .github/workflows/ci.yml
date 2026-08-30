@@ -31,5 +31,6 @@ jobs:
         run: |
           python -m nethawk version
           python -m nethawk analyze examples/sample.pcap
+          python -m nethawk flows examples/sample.pcap --limit 10
           python -m nethawk analyze examples/sample.pcap --format json > /tmp/report.json
           python -m nethawk analyze examples/sample.pcap --format html -o /tmp/report.html
