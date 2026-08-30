@@ -16,6 +16,14 @@
 
   var DATA = null;
   var findSev = "all", findQ = "", flowSort = "bytes", flowDir = "desc", flowQ = "", focusHost = null;
+  var currentScenario = null, currentTab = "inc";
+  var SCENARIOS = {
+    incident: { file: "samples/incident.pcap", name: "incident.pcap" },
+    dns_tunnel: { file: "samples/dns_tunnel.pcap", name: "dns_tunnel.pcap" },
+    cleartext: { file: "samples/cleartext.pcap", name: "cleartext.pcap" },
+    scan: { file: "samples/scan.pcap", name: "scan.pcap" },
+    clean: { file: "samples/clean.pcap", name: "clean.pcap" }
+  };
 
   function $(s, r) { return (r || document).querySelector(s); }
   function esc(s) {
@@ -44,7 +52,7 @@
     if (u === DEMO_USER && p === DEMO_PASS) {
       try { sessionStorage.setItem(SESSION_KEY, "1"); } catch (e) {}
       $("#login-err").textContent = "";
-      showApp();
+      showApp(); applyHash();
       return true;
     }
     $("#login-err").textContent = "Incorrect username or password.";
@@ -52,7 +60,8 @@
   }
   function signOut() {
     try { sessionStorage.removeItem(SESSION_KEY); } catch (e) {}
-    DATA = null;
+    DATA = null; currentScenario = null;
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     $("#dash").innerHTML = "";
     $("#intro").classList.remove("hidden");
     $("#exports").classList.add("hidden");
@@ -64,6 +73,7 @@
   // ---------- analysis ----------
   function analyzeBuffer(buf) {
     $("#err").textContent = "";
+    currentScenario = null;
     $("#intro").classList.add("hidden");
     $("#spin").classList.remove("hidden");
     // Defer so the spinner paints before the parse runs.
@@ -73,7 +83,7 @@
         DATA = result;
         $("#spin").classList.add("hidden");
         $("#exports").classList.remove("hidden");
-        render(result);
+        render(result); updateHash();
       } catch (e) {
         $("#spin").classList.add("hidden");
         $("#intro").classList.remove("hidden");
@@ -81,13 +91,41 @@
       }
     }, 30);
   }
-  function loadSample(file, name) {
+  function loadScenario(key, onDone) {
+    var sc = SCENARIOS[key]; if (!sc) return;
     $("#err").textContent = "";
-    fetch(file).then(function (r) {
+    fetch(sc.file).then(function (r) {
       if (!r.ok) throw new Error("could not load the capture");
       return r.arrayBuffer();
-    }).then(function (b) { DATA_NAME = name || "sample.pcap"; analyzeBuffer(b); })
-      .catch(function (e) { $("#err").textContent = String(e.message || e); });
+    }).then(function (buf) {
+      try {
+        var result = window.NetHawkEngine.analyze(buf);
+        DATA = result; DATA_NAME = sc.name; currentScenario = key;
+        $("#intro").classList.add("hidden"); $("#spin").classList.add("hidden"); $("#exports").classList.remove("hidden");
+        render(result); updateHash();
+        if (onDone) onDone();
+      } catch (e) { $("#err").textContent = String(e && e.message ? e.message : e); }
+    }).catch(function (e) { $("#err").textContent = String(e.message || e); });
+  }
+  function switchTab(tab) {
+    Array.prototype.forEach.call(document.querySelectorAll(".nav button"), function (x) { if (x.getAttribute("data-tab") === tab) x.classList.add("active"); else x.classList.remove("active"); });
+    Array.prototype.forEach.call(document.querySelectorAll(".panel"), function (x) { if (x.id === "p-" + tab) x.classList.add("active"); else x.classList.remove("active"); });
+    currentTab = tab; updateHash();
+  }
+  function updateShareBtn() { var b = $("#copylink"); if (b) b.style.display = currentScenario ? "" : "none"; }
+  function updateHash() {
+    if (!currentScenario) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} updateShareBtn(); return; }
+    var parts = ["s=" + currentScenario, "t=" + currentTab];
+    if (focusHost) parts.push("h=" + encodeURIComponent(focusHost));
+    try { history.replaceState(null, "", "#" + parts.join("&")); } catch (e) {}
+    updateShareBtn();
+  }
+  function applyHash() {
+    var hash = (location.hash || "").replace(/^#/, ""); if (!hash) return false;
+    var params = {}; hash.split("&").forEach(function (kv) { var i = kv.indexOf("="); if (i > 0) params[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); });
+    if (!params.s || !SCENARIOS[params.s]) return false;
+    loadScenario(params.s, function () { if (params.t) switchTab(params.t); if (params.h) setFocus(params.h); });
+    return true;
   }
   var DATA_NAME = "capture.pcap";
 
@@ -107,7 +145,7 @@
     Array.prototype.forEach.call(document.querySelectorAll("#dash tr[data-host]"), function (tr) {
       if (tr.getAttribute("data-host") === focusHost) tr.classList.add("on"); else tr.classList.remove("on");
     });
-    renderFindings(); renderFlows(); renderNetwork();
+    renderFindings(); renderFlows(); renderNetwork(); updateHash();
   }
 
   function render(data) {
@@ -157,12 +195,9 @@
     html += '<p class="foot">Analyzed in your browser by NetHawk ' + esc(data.version || "") + ". Nothing was uploaded. Analyze only captures you are authorized to inspect.</p>";
 
     $("#dash").innerHTML = html;
+    currentTab = "inc";
     Array.prototype.forEach.call(document.querySelectorAll(".nav button"), function (b) {
-      b.onclick = function () {
-        Array.prototype.forEach.call(document.querySelectorAll(".nav button"), function (x) { x.classList.remove("active"); });
-        Array.prototype.forEach.call(document.querySelectorAll(".panel"), function (x) { x.classList.remove("active"); });
-        b.classList.add("active"); $("#p-" + b.getAttribute("data-tab")).classList.add("active");
-      };
+      b.onclick = function () { switchTab(b.getAttribute("data-tab")); };
     });
     Array.prototype.forEach.call(document.querySelectorAll("#dash tr[data-host]"), function (tr) {
       tr.onclick = function () { setFocus(tr.getAttribute("data-host")); };
@@ -467,7 +502,7 @@
       e.preventDefault();
       signIn($("#username").value.trim(), $("#password").value);
     });
-    try { if (sessionStorage.getItem(SESSION_KEY) === "1") showApp(); } catch (e) {}
+    try { if (sessionStorage.getItem(SESSION_KEY) === "1") { showApp(); applyHash(); } } catch (e) {}
 
     // dropzone
     var dz = $("#drop"), fi = $("#file");
@@ -481,13 +516,17 @@
     fi.addEventListener("change", function () { if (fi.files.length) { DATA_NAME = fi.files[0].name; fi.files[0].arrayBuffer().then(analyzeBuffer); } });
 
     Array.prototype.forEach.call(document.querySelectorAll(".samp"), function (b) {
-      b.addEventListener("click", function () { loadSample(b.getAttribute("data-file"), b.getAttribute("data-name")); });
+      b.addEventListener("click", function () { loadScenario(b.getAttribute("data-scenario")); });
     });
     $("#signout").addEventListener("click", signOut);
-    $("#again").addEventListener("click", function () { DATA = null; $("#dash").innerHTML = ""; $("#exports").classList.add("hidden"); $("#intro").classList.remove("hidden"); $("#err").textContent = ""; });
+    $("#again").addEventListener("click", function () { DATA = null; currentScenario = null; $("#dash").innerHTML = ""; $("#exports").classList.add("hidden"); $("#intro").classList.remove("hidden"); $("#err").textContent = ""; updateHash(); });
     $("#dl-json").addEventListener("click", exportJson);
     $("#dl-ioc").addEventListener("click", exportIndicators);
     $("#dl-html").addEventListener("click", exportHtml);
+    var cl = $("#copylink");
+    if (cl) cl.addEventListener("click", function () {
+      try { navigator.clipboard.writeText(location.href); var t = cl.textContent; cl.textContent = "Copied"; setTimeout(function () { cl.textContent = t; }, 1200); } catch (e) {}
+    });
 
     // Optional preview mode: render a supplied analysis without a file.
     if (window.NETHAWK_PREVIEW) {

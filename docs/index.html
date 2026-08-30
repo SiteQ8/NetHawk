@@ -42,6 +42,7 @@
     <div class="spacer"></div>
     <div id="exports" class="hidden">
       <button class="btn ghost" id="again">Analyze another</button>
+      <button class="btn" id="copylink" style="display:none">Copy link</button>
       <button class="btn" id="dl-json">Download JSON</button>
       <button class="btn" id="dl-ioc">Export indicators</button>
       <button class="btn" id="dl-html">Download HTML report</button>
@@ -58,11 +59,11 @@
     <div class="samples">
       <div class="samples-label">Or try a scenario:</div>
       <div class="row">
-        <button class="btn samp" data-file="samples/incident.pcap" data-name="incident.pcap">C2 and exfiltration</button>
-        <button class="btn samp" data-file="samples/dns_tunnel.pcap" data-name="dns_tunnel.pcap">DNS tunneling</button>
-        <button class="btn samp" data-file="samples/cleartext.pcap" data-name="cleartext.pcap">Cleartext credentials</button>
-        <button class="btn samp" data-file="samples/scan.pcap" data-name="scan.pcap">Port scan</button>
-        <button class="btn samp" data-file="samples/clean.pcap" data-name="clean.pcap">Clean traffic</button>
+        <button class="btn samp" data-scenario="incident">C2 and exfiltration</button>
+        <button class="btn samp" data-scenario="dns_tunnel">DNS tunneling</button>
+        <button class="btn samp" data-scenario="cleartext">Cleartext credentials</button>
+        <button class="btn samp" data-scenario="scan">Port scan</button>
+        <button class="btn samp" data-scenario="clean">Clean traffic</button>
       </div>
     </div>
     <div id="err" class="err"></div>

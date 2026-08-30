@@ -18,6 +18,9 @@ Keep a Changelog, and the project uses semantic versioning.
   and a single host reaching an unusually large number of external destinations.
 * Export from the demo: download the full result as JSON, a list of indicators,
   or a standalone HTML report.
+* Shareable demo links. As you pick a scenario, switch tabs, and focus a host,
+  the address bar updates, and a Copy link button lets you share a URL that
+  reopens exactly that scenario, tab, and focused host.
 * An evidence drawer on every incident in both GUIs: expand it to see the exact
   findings that produced the incident, each with its ATT&CK technique, and the
   key flows behind it.
