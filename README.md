@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🦅 NetHawk
+# NetHawk
 
 ### Reconstruct attacks from a packet capture
 
